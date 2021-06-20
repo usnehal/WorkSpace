@@ -79,6 +79,8 @@ target/
 ckpt
 test_images
 
+temp_model
+
 # IPython
 profile_default/
 ipython_config.py
