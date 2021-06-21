@@ -77,7 +77,6 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 ckpt
-test_images
 
 temp_model
 
