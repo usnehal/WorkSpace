@@ -39,6 +39,7 @@ import matplotlib.pyplot as plt
 in_nimble = False
 in_WSL = False
 in_tpu = False
+in_pi = False
 
 host = socket.gethostname()
 if('cuda' in host):
@@ -47,7 +48,9 @@ if('cuda' in host):
 if(host == 'LTsuphale-NC2JM'):
     in_WSL = True
     print("In WSL")
-
+if(host == 'raspberrypi'):
+    in_pi = True
+    print("In raspberry-pi")
 
 # In[4]:
 
@@ -57,6 +60,8 @@ if(in_WSL == True):
     images_path='/home/suphale/snehal_bucket/coco/raw-data/train2017/'
 if(in_nimble == True):
     images_path='/mnt/disks/user/project/coco/train2017/'
+if(in_nimble == True):
+    images_path='/home/suphale/WorkSpace/test_images/'
 
 text_file = './lists/captions_' + str(total_test_images) + '.txt'
 list_file = './lists/images_' + str(total_test_images) + '.txt'
