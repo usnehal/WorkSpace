@@ -17,18 +17,12 @@
 #Import all the required libraries
 import time
 import re
-import glob
-from time import sleep
 import pandas as pd
 import numpy as np
 from skimage import io
-import matplotlib.pyplot as plt
 import random
 from collections import Counter
-from wordcloud import WordCloud
 from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-import seaborn as sns
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers,Model
@@ -36,26 +30,11 @@ from tqdm import tqdm
 from nltk.translate.bleu_score import sentence_bleu
 import socket
 import pickle5 as pickle
-
-
-# Let's read the dataset
-
-# ## Data understanding
-# 1.Import the dataset and read image & captions into two seperate variables
-# 
-# 2.Visualise both the images & text present in the dataset
-# 
-# 3.Create word-to-index and index-to-word mappings.
-# 
-# 4.Create a dataframe which summarizes the image, path & captions as a dataframe
-# 
-# 5.Visualise the top 30 occuring words in the captions
-# 
-# 6.Create a list which contains all the captions & path
-# 
+from tensorflow.keras.activations import tanh
+from tensorflow.keras.activations import softmax
+import matplotlib.pyplot as plt
 
 # In[3]:
-
 
 in_nimble = False
 in_WSL = False
@@ -72,277 +51,31 @@ if(host == 'LTsuphale-NC2JM'):
 
 # In[4]:
 
-
-#Import the dataset and read the image into a seperate variable
-# images_path='Images'
-# text_file = './captions.txt'
-# images_path='/content/drive/MyDrive/TestImages'
-# text_file = '/content/drive/MyDrive/captions_small.txt'
-# images_path='/content/drive/MyDrive/Images/Images'
-# text_file = '/content/drive/MyDrive/captions.txt'
-# images_path='./Flickr8K/Images'
-# text_file = './Flickr8K/captions.txt'
-# images_path='TestImages'
-# text_file = './captions_small.txt'
-images_path = ''
-text_file = ''
-total_test_images = 8
+total_test_images = 128
 
 if(in_WSL == True):
     images_path='/home/suphale/snehal_bucket/coco/raw-data/train2017/'
 if(in_nimble == True):
-    images_path='/mnt/disks/user/project/WorkSpace/test_images/'
+    images_path='/mnt/disks/user/project/coco/train2017/'
 
 text_file = './lists/captions_' + str(total_test_images) + '.txt'
 list_file = './lists/images_' + str(total_test_images) + '.txt'
-# Find out total number of images in the images folder
-# all_imgs = glob.glob(images_path + '/*.jpg',recursive=True)
-# all_imgs = sorted(all_imgs)
-# total_num_images = len(all_imgs)
-# print("The total images present in the images folder: {}".format(total_num_images))
-
-
-# In[5]:
-
-
-all_imgs = [images_path + line.rstrip() for line in open(list_file)]
-all_imgs = sorted(all_imgs)
-total_num_images = len(all_imgs)
-print("The total images present in the dataset: {}".format(total_num_images))
-
-
-# In[6]:
-
-
-#Visualise both the images & text present in the dataset
-print("The total images present in the dataset: {}".format(total_num_images))
-num_lines = sum(1 for line in open(text_file))
-print("The total number of lines in the caption file: {}".format(num_lines))
-
-
-# In[7]:
-
-
-# define a function to clean text data
-def extract_jpg_caption(line):
-    char_filter = r"[^\w]"
-
-    jpg_path = None
-    caption = None
-
-    jpg_position = line.find(".jpg")
-    if(jpg_position != -1):
-        jpg_path = images_path + '/' + line[:jpg_position+4]
-
-        caption = line[jpg_position+5:].strip()
-
-        # convert words to lower case
-        caption = caption.lower()
-
-        # split into words
-        words = caption.split()
-
-        # strip whitespace from all words
-        words = [word.strip() for word in words]
-
-        # join back words to get document
-        caption = " ".join(words)
-
-        # remove unwanted characters
-        caption = re.sub(char_filter, " ", caption)
-
-        # remove unwanted characters
-        caption = re.sub(r"\.", " ", caption)
-
-        # replace multiple whitespaces with single whitespace
-        caption = re.sub(r"\s+", " ", caption)
-
-        # strip whitespace from document
-        caption = caption.strip()
-
-        caption = '<start> ' + caption + ' <end>'
-
-    return jpg_path, caption
-
-
-# In[8]:
-
-
-#store all the image id here
-all_img_id= [] 
-#store all the image path here
-all_img_vector=[]
-#store all the captions here
-annotations= [] 
-# list of all captions in word list format
-annotations_word_list = []
-
-
-# In[9]:
-
-
-def load_doc(filename):
-    #your code here
-    file  = open(filename, 'r') 
-    Lines = file.readlines() 
-    
-    text = ""
-    count = 0
-    for line in Lines:
-        jpg_path, caption = extract_jpg_caption(line)
-        if(jpg_path != None):
-            all_img_id.append(count)
-            all_img_vector.append(jpg_path)
-            annotations.append(caption)
-            word_list = caption.split()
-            annotations_word_list.append(word_list)
-            text += " " + caption
-            count += 1
-    file.close()
-    return text
-
-
-# In[10]:
-
-
-#Import the dataset and read the text file into a seperate variable
-doc = load_doc(text_file)
-print(doc[:300])
-
-
-# In[11]:
-
-
-a = set()
-for x in annotations_word_list:
-    for y in x:
-        a.add(y)
-print(len(a))
-
-
-# In[12]:
-
-
-annotations[:2]
-
-
-# Randomly pick an image from the data and show its corresponding caption
-# 
-
-# In[13]:
-
-
-random_num = random.randint(0,total_num_images-1)
-print(annotations[random_num])
-img_path = all_img_vector[random_num]
-image = io.imread(img_path)
-plt.imshow(image)
-
-
-# In[14]:
-
-
-print("Total captions present in the dataset: "+ str(len(annotations)))
-print("Total images present in the dataset: " + str(len(all_img_vector)))
-total_images = len(all_img_vector)
-
-
-# Create a dataframe which summarizes the image, path & captions as a dataframe
-# 
-# Each image id has 5 captions associated with it therefore the total dataset should have 40455 samples.
-
-# In[15]:
-
-
-df = pd.DataFrame(list(zip(all_img_id, all_img_vector,annotations)),columns =['ID','Path', 'Captions']) 
-    
-
-
-# In[16]:
-
-
-# Visualise the top 30 occuring words in the captions
-vocabulary = [word for word in doc.split()] #write your code here
-val_count = Counter(vocabulary)
-
-str_list = ""
-for x,y in val_count.most_common(32):
-    if(x!='<start>') and (x!='<end>'):
-        str_list += " " + x
-wordcloud = WordCloud().generate(str_list)
-plt.figure()
-plt.imshow(wordcloud, interpolation="bilinear")
-plt.axis("off")
-plt.show()
-
-
-# In[17]:
-
-
-print("Total captions present in the dataset: "+ str(len(annotations)))
-print("Total images present in the dataset: " + str(len(all_img_vector)))
-
-
-# ## Pre-Processing the captions
-# 1.Create the tokenized vectors by tokenizing the captions fore ex :split them using spaces & other filters. 
-# This gives us a vocabulary of all of the unique words in the data. Keep the total vocaublary to top 5,000 words for saving memory.
-# 
-# 2.Replace all other words with the unknown token "UNK" .
-# 
-# 3.Create word-to-index and index-to-word mappings.
-# 
-# 4.Pad all sequences to be the same length as the longest one.
 
 # In[18]:
 
-
-# create the tokenizer
-
-# your code here
 max_tokenized_words = 10000
+MAX_SEQ_LENGTH = 25
+batch_size = 32
+embedding_dim = 256 
+units = 512
 
-# tokenizer = Tokenizer(num_words=max_tokenized_words+1,oov_token='<unknown>')
-# tokenizer.fit_on_texts(annotations_word_list)
+# In[18]:
 
 with open('saved_model/tokenizer.pickle', 'rb') as handle:
     tokenizer = pickle.load(handle)
 
-
-# In[19]:
-
-
-# Create word-to-index and index-to-word mappings.
-VOCABULARY_SIZE = len(tokenizer.word_index) + 1
-print('Vocabulary Size: {}'.format(VOCABULARY_SIZE))
-
-# print("index of dog = %d" % (tokenizer.word_index['dog']))
-# print("word corresponding to index 10 = %s" % (tokenizer.index_word[10]))
-
-
-# In[20]:
-
-
-# Create a word count of your tokenizer to visulize the Top 30 occuring words after text processing
-data = tokenizer.word_counts
-
-
-# In[21]:
-
-
-# Pad each vector to the max_length of the captions ^ store it to a vairable
-
-MAX_SEQ_LENGTH = 25
-
-cap_vector = annotations_word_list
-Y_encoded = tokenizer.texts_to_sequences(cap_vector)
-cap_vector_encoded_padded = pad_sequences(Y_encoded, maxlen=MAX_SEQ_LENGTH, padding="post", truncating="post")
-
-
 # In[22]:
 
-
-#write your code here
-batch_size = 32
 def read_image(image_path,label):
     image = tf.io.read_file(image_path)
     image = tf.image.decode_jpeg(image, channels=3)
@@ -353,109 +86,28 @@ def read_image(image_path,label):
     return image, label
 
 
-
-# In[23]:
-
-
-from sklearn.model_selection import train_test_split
-
-# split the data into train, validation and final test sets
-img_train, final_img_test, cap_train, final_cap_test = train_test_split(all_img_vector, cap_vector_encoded_padded, test_size=0.01, random_state=42)
-img_train, img_test, cap_train, cap_test = train_test_split(img_train, cap_train, test_size=0.2, random_state=42)
-
-total_training_images = len(img_train)
-total_test_images = len(img_test)
-total_final_testing_images = len(final_img_test)
-print("Total Images for training=%d" % (total_training_images))
-print("Total Images for testing (validation)=%d" % (total_test_images))
-print("Total Images for final random testing=%d" % (total_final_testing_images))
-
-
-# In[24]:
-
-
-train_dataset = tf.data.Dataset.from_tensor_slices((img_train, cap_train))
-test_dataset = tf.data.Dataset.from_tensor_slices((img_test, cap_test))
-final_test_dataset = tf.data.Dataset.from_tensor_slices((final_img_test, final_cap_test))
-
-
-
-# In[26]:
-
-
-#write your code here
-train_dataset = train_dataset.map(read_image)
-train_dataset.shuffle(buffer_size=1024,reshuffle_each_iteration=True)
-train_dataset = train_dataset.batch(batch_size)
-train_dataset = train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-
-test_dataset = test_dataset.map(read_image)
-test_dataset.shuffle(buffer_size=1024,reshuffle_each_iteration=True)
-test_dataset = test_dataset.batch(batch_size)
-test_dataset = test_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
-
-
-# A utility function to display image retrieved from a dataset and its corresponding caption
-
-# In[27]:
-
-
-# A utility function to display image retrieved from a dataset and its corresponding caption
-def show_image_caption_from_dataset(image,label):
-    plt.imshow(image)
-    for x in label.numpy():
-        if(x != 0):
-            print(tokenizer.index_word[x], end =" ")
-
-
 # In[30]:
 
-#Reading the model from JSON file
 with open('saved_model/image_features_extract_model.json', 'r') as json_file:
     json_savedModel= json_file.read()
-#load the model architecture 
 image_features_extract_model = tf.keras.models.model_from_json(json_savedModel)
 image_features_extract_model.load_weights('saved_model/image_features_extract_model.h5')
 
-
 # In[31]:
 
-
-# write your code to extract features from each image in the dataset
 def extract_image_features(sample_img_batch):
     features = image_features_extract_model(sample_img_batch)
     features = tf.reshape(features, [sample_img_batch.shape[0],8*8, 2048])
     return features
 
-
-# In[32]:
-
-
-sample_img_batch, sample_cap_batch = next(iter(train_dataset))
-sample_img_batch = extract_image_features(sample_img_batch)
-
-
-
-# ## Model Building
-# 1.Set the parameters
-# 
-# 2.Build the Encoder, Attention model & Decoder
-
 # In[34]:
 
-
-embedding_dim = 256 
-units = 512
 vocab_size = max_tokenized_words + 1
-train_num_steps = total_training_images //batch_size #len(total train images) // BATCH_SIZE
-test_num_steps = total_test_images //batch_size #len(total test images) // BATCH_SIZE
 
-
-# ### Encoder
 
 # In[35]:
 
-
+# ### Encoder
 class Encoder(Model):
     def __init__(self,embed_dim):
         super(Encoder, self).__init__()
@@ -470,10 +122,6 @@ class Encoder(Model):
 # ### Attention model
 
 # In[37]:
-
-
-from tensorflow.keras.activations import tanh
-from tensorflow.keras.activations import softmax
 
 class Attention_model(Model):
     def __init__(self, units):
@@ -508,11 +156,10 @@ class Attention_model(Model):
         return context_vector, attention_weights        
 
 
-# ### Decoder
 
 # In[38]:
 
-
+# ### Decoder
 class Decoder(Model):
     def __init__(self, embed_dim, units, vocab_size):
         super(Decoder, self).__init__()
@@ -553,14 +200,16 @@ class Decoder(Model):
 
 # In[39]:
 
+s = tf.zeros([32, 64, 2048], tf.int32)
+
 encoder=Encoder(embedding_dim)
 
 decoder=Decoder(embedding_dim, units, vocab_size)
 
-features=encoder(sample_img_batch)
+features=encoder(s)
 
-hidden = decoder.init_state(batch_size=sample_cap_batch.shape[0])
-dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * sample_cap_batch.shape[0], 1)
+hidden = decoder.init_state(batch_size=batch_size)
+dec_input = tf.expand_dims([tokenizer.word_index['<start>']] * batch_size, 1)
 
 predictions, hidden_out, attention_weights= decoder(dec_input, features, hidden)
 
@@ -623,36 +272,131 @@ def filt_text(text):
 
 # In[ ]:
 import time
-rid = np.random.randint(0, total_final_testing_images)
-# test_image = final_img_test[rid]
-test_image = './413231421_43833a11f5.jpg'
 
-# test_image = './Images/413231421_43833a11f5.jpg'
-# test_image = '/content/drive/MyDrive/TestImages/3637013_c675de7705.jpg'
+all_imgs = [images_path + line.rstrip() for line in open(list_file)]
+all_imgs = sorted(all_imgs)
+total_num_images = len(all_imgs)
+print("The total images present in the dataset: {}".format(total_num_images))
 
-# real_caption = final_cap_test[rid]
-# real_caption = '<start> A couple stands close at the water edge <end>'
-real_caption = '<start> black dog is digging in the snow <end>'
-real_caption = ' '.join([tokenizer.index_word[i] for i in final_cap_test[rid] if i not in [0]])
+#Visualise both the images & text present in the dataset
+print("The total images present in the dataset: {}".format(total_num_images))
+num_lines = sum(1 for line in open(text_file))
+print("The total number of lines in the caption file: {}".format(num_lines))
 
-t0= time.perf_counter()
-result, attention_plot,pred_test = evaluate(test_image)
-t1 = time.perf_counter() - t0
-print("Time elapsed: ", t1)
+# define a function to clean text data
+def extract_jpg_caption(line):
+    char_filter = r"[^\w]"
 
-real_caption=filt_text(real_caption)      
+    jpg_path = None
+    caption = None
 
-pred_caption=' '.join(result).rsplit(' ', 1)[0]
+    jpg_position = line.find(".jpg")
+    if(jpg_position != -1):
+        jpg_path = images_path + '/' + line[:jpg_position+4]
 
-real_appn = []
-real_appn.append(real_caption.split())
-reference = real_appn
-candidate = pred_caption.split()
+        caption = line[jpg_position+5:].strip()
 
-score = sentence_bleu(reference, candidate, weights=[1]) #set your weights)
-print(f"BLEU score: {score*100}")
+        # convert words to lower case
+        caption = caption.lower()
 
-print ('Real Caption:', real_caption)
-print ('Prediction Caption:', pred_caption)
+        # split into words
+        words = caption.split()
+
+        # strip whitespace from all words
+        words = [word.strip() for word in words]
+
+        # join back words to get document
+        caption = " ".join(words)
+
+        # remove unwanted characters
+        caption = re.sub(char_filter, " ", caption)
+
+        # remove unwanted characters
+        caption = re.sub(r"\.", " ", caption)
+
+        # replace multiple whitespaces with single whitespace
+        caption = re.sub(r"\s+", " ", caption)
+
+        # strip whitespace from document
+        caption = caption.strip()
+
+        caption = '<start> ' + caption + ' <end>'
+
+    return jpg_path, caption
+
+    #store all the image id here
+all_img_id= [] 
+#store all the image path here
+all_img_vector=[]
+#store all the captions here
+annotations= [] 
+# list of all captions in word list format
+annotations_word_list = []
+
+def load_doc(filename):
+    #your code here
+    file  = open(filename, 'r') 
+    Lines = file.readlines() 
+    
+    text = ""
+    count = 0
+    for line in Lines:
+        jpg_path, caption = extract_jpg_caption(line)
+        if(jpg_path != None):
+            all_img_id.append(count)
+            all_img_vector.append(jpg_path)
+            annotations.append(caption)
+            word_list = caption.split()
+            annotations_word_list.append(word_list)
+            text += " " + caption
+            count += 1
+    file.close()
+    return text
+
+doc = load_doc(text_file)
+
+for i in range(10):
+    random_num = random.randint(0,total_num_images-1)
+    img_path = all_img_vector[random_num]
+    print("----------------")
+    print(img_path)
+    print(annotations[random_num])
+    image = io.imread(img_path)
+    plt.imshow(image)
+
+
+    # rid = np.random.randint(0, total_final_testing_images)
+    # test_image = final_img_test[rid]
+    # test_image = './413231421_43833a11f5.jpg'
+    test_image = img_path
+    real_caption = annotations[random_num]
+
+    # test_image = './Images/413231421_43833a11f5.jpg'
+    # test_image = '/content/drive/MyDrive/TestImages/3637013_c675de7705.jpg'
+
+    # real_caption = final_cap_test[rid]
+    # real_caption = '<start> Two giraffes graze on treetops in the distance. <end>'
+    # real_caption = '<start> black dog is digging in the snow <end>'
+    # real_caption = ' '.join([tokenizer.index_word[i] for i in final_cap_test[rid] if i not in [0]])
+
+    t0= time.perf_counter()
+    result, attention_plot,pred_test = evaluate(test_image)
+    t1 = time.perf_counter() - t0
+    print("Time elapsed: ", t1)
+
+    real_caption=filt_text(real_caption)      
+
+    pred_caption=' '.join(result).rsplit(' ', 1)[0]
+
+    real_appn = []
+    real_appn.append(real_caption.split())
+    reference = real_appn
+    candidate = pred_caption.split()
+
+    score = sentence_bleu(reference, candidate, weights=[1]) #set your weights)
+
+    print(f"BLEU score: {score*100}")
+    print ('Real Caption:', real_caption)
+    print ('Prediction Caption:', pred_caption)
 
 
