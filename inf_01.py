@@ -304,7 +304,7 @@ max_tokenized_words = 5000
 # tokenizer = Tokenizer(num_words=max_tokenized_words+1,oov_token='<unknown>')
 # tokenizer.fit_on_texts(annotations_word_list)
 
-with open('temp_model/tokenizer.pickle', 'rb') as handle:
+with open('saved_model/tokenizer.pickle', 'rb') as handle:
     tokenizer = pickle.load(handle)
 
 
@@ -411,11 +411,11 @@ def show_image_caption_from_dataset(image,label):
 # In[30]:
 
 #Reading the model from JSON file
-with open('temp_model/image_features_extract_model.json', 'r') as json_file:
+with open('saved_model/image_features_extract_model.json', 'r') as json_file:
     json_savedModel= json_file.read()
 #load the model architecture 
 image_features_extract_model = tf.keras.models.model_from_json(json_savedModel)
-image_features_extract_model.load_weights('temp_model/image_features_extract_model.h5')
+image_features_extract_model.load_weights('saved_model/image_features_extract_model.h5')
 
 
 # In[31]:
@@ -567,8 +567,8 @@ predictions, hidden_out, attention_weights= decoder(dec_input, features, hidden)
 
 # In[48]:
 
-decoder.load_weights("temp_model/decoder.h5")
-encoder.load_weights("temp_model/encoder.h5")
+decoder.load_weights("saved_model/decoder.h5")
+encoder.load_weights("saved_model/encoder.h5")
 
 # In[ ]:
 
