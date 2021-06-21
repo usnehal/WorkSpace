@@ -35,7 +35,7 @@ from tensorflow.keras import layers,Model
 from tqdm import tqdm
 from nltk.translate.bleu_score import sentence_bleu
 import socket
-import pickle
+import pickle5 as pickle
 
 
 # Let's read the dataset
@@ -299,7 +299,7 @@ print("Total images present in the dataset: " + str(len(all_img_vector)))
 # create the tokenizer
 
 # your code here
-max_tokenized_words = 5000
+max_tokenized_words = 10000
 
 # tokenizer = Tokenizer(num_words=max_tokenized_words+1,oov_token='<unknown>')
 # tokenizer.fit_on_texts(annotations_word_list)
