@@ -61,8 +61,8 @@ if(in_WSL == True):
     images_path='/home/suphale/WorkSpace/test_images'
 if(in_nimble == True):
     images_path='/mnt/disks/user/project/coco/train2017/'
-if(in_nimble == True):
-    images_path='/home/suphale/WorkSpace/test_images/'
+if(in_pi == True):
+    images_path='/home/pi/WorkSpace/test_images/'
 
 text_file = './lists/captions_' + str(total_test_images) + '.txt'
 list_file = './lists/images_' + str(total_test_images) + '.txt'
