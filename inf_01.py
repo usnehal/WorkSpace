@@ -22,7 +22,7 @@ import numpy as np
 from skimage import io
 import random
 from collections import Counter
-from keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.text import Tokenizer
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers,Model
@@ -57,7 +57,8 @@ if(host == 'raspberrypi'):
 total_test_images = 128
 
 if(in_WSL == True):
-    images_path='/home/suphale/snehal_bucket/coco/raw-data/train2017/'
+    #images_path='/home/suphale/snehal_bucket/coco/raw-data/train2017/'
+    images_path='/home/suphale/WorkSpace/test_images'
 if(in_nimble == True):
     images_path='/mnt/disks/user/project/coco/train2017/'
 if(in_nimble == True):
@@ -359,13 +360,16 @@ def load_doc(filename):
     return text
 
 doc = load_doc(text_file)
+total_time = 0.0
 
-for i in range(10):
+max_test_images = 25
+for i in range(max_test_images):
     random_num = random.randint(0,total_num_images-1)
     img_path = all_img_vector[random_num]
-    print("----------------")
-    print(img_path)
-    print(annotations[random_num])
+    #print("----------------")
+    #print(img_path)
+    #print(annotations[random_num])
+    print("")
     image = io.imread(img_path)
     plt.imshow(image)
 
@@ -387,7 +391,7 @@ for i in range(10):
     t0= time.perf_counter()
     result, attention_plot,pred_test = evaluate(test_image)
     t1 = time.perf_counter() - t0
-    print("Time elapsed: ", t1)
+    total_time = total_time + t1
 
     real_caption=filt_text(real_caption)      
 
@@ -400,8 +404,9 @@ for i in range(10):
 
     score = sentence_bleu(reference, candidate, weights=[1]) #set your weights)
 
-    print(f"BLEU score: {score*100}")
-    print ('Real Caption:', real_caption)
-    print ('Prediction Caption:', pred_caption)
+    print("Time: %.2f BLEU: %.2f" % (t1,score*100))
+    print ('Real:', real_caption)
+    print ('Pred:', pred_caption)
 
+print("Average time = %f" % (total_time/max_test_images))
 
