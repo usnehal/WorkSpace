@@ -362,7 +362,7 @@ def load_doc(filename):
 doc = load_doc(text_file)
 total_time = 0.0
 
-max_test_images = 25
+max_test_images = total_test_images
 for i in range(max_test_images):
     random_num = random.randint(0,total_num_images-1)
     img_path = all_img_vector[random_num]
