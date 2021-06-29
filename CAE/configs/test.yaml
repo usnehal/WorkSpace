@@ -1,0 +1,7 @@
+checkpoint: /media/vobs/repo/Explore/cae/model_yt_small_final.state
+exp_name: testing
+batch_every: 100
+shuffle: false
+dataset_path: /media/vobs/repo/Explore/cae/datasets/testing
+num_workers: 1
+device: cpu
