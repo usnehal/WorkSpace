@@ -335,6 +335,7 @@ all_img_id= []
 #store all the image path here
 all_img_vector=[]
 #store all the captions here
+annotations_dict = {} 
 annotations= [] 
 # list of all captions in word list format
 annotations_word_list = []
@@ -352,6 +353,13 @@ def load_doc(filename):
             all_img_id.append(count)
             all_img_vector.append(jpg_path)
             annotations.append(caption)
+
+            caption_list = []
+            if jpg_path in annotations_dict.keys():
+                caption_list = annotations_dict[jpg_path]
+            caption_list.append(caption)
+            annotations_dict[jpg_path] = caption_list
+
             word_list = caption.split()
             annotations_word_list.append(word_list)
             text += " " + caption
@@ -360,33 +368,18 @@ def load_doc(filename):
     return text
 
 doc = load_doc(text_file)
-total_time = 0.0
 
+total_time = 0.0
 max_test_images = total_test_images
 for i in range(max_test_images):
     random_num = random.randint(0,total_num_images-1)
     img_path = all_img_vector[random_num]
-    #print("----------------")
-    #print(img_path)
-    #print(annotations[random_num])
     print("")
-    image = io.imread(img_path)
-    plt.imshow(image)
+    # image = io.imread(img_path)
+    # plt.imshow(image)
 
-
-    # rid = np.random.randint(0, total_final_testing_images)
-    # test_image = final_img_test[rid]
-    # test_image = './413231421_43833a11f5.jpg'
     test_image = img_path
     real_caption = annotations[random_num]
-
-    # test_image = './Images/413231421_43833a11f5.jpg'
-    # test_image = '/content/drive/MyDrive/TestImages/3637013_c675de7705.jpg'
-
-    # real_caption = final_cap_test[rid]
-    # real_caption = '<start> Two giraffes graze on treetops in the distance. <end>'
-    # real_caption = '<start> black dog is digging in the snow <end>'
-    # real_caption = ' '.join([tokenizer.index_word[i] for i in final_cap_test[rid] if i not in [0]])
 
     t0= time.perf_counter()
     result, attention_plot,pred_test = evaluate(test_image)
@@ -397,14 +390,22 @@ for i in range(max_test_images):
 
     pred_caption=' '.join(result).rsplit(' ', 1)[0]
 
+    # real_appn = []
+    # real_appn.append(real_caption.split())
+    # reference = real_appn
+    # candidate = pred_caption.split()
+
     real_appn = []
-    real_appn.append(real_caption.split())
+    real_caption_list = annotations_dict[img_path]
+    for real_caption in real_caption_list:
+        real_caption=filt_text(real_caption)
+        real_appn.append(real_caption.split())
     reference = real_appn
     candidate = pred_caption.split()
 
     score = sentence_bleu(reference, candidate, weights=[1]) #set your weights)
 
-    print("Time: %.2f BLEU: %.2f" % (t1,score*100))
+    print("Time: %.2f BLEU: %.2f" % (t1,score))
     print ('Real:', real_caption)
     print ('Pred:', pred_caption)
 
