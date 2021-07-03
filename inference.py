@@ -44,7 +44,7 @@ if(host == 'raspberrypi'):
 # In[4]:
 
 total_test_images = 128
-
+images_path='/home/suphale/WorkSpace/test_images'
 if(in_WSL == True):
     #images_path='/home/suphale/snehal_bucket/coco/raw-data/train2017/'
     images_path='/home/suphale/WorkSpace/test_images'
