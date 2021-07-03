@@ -33,7 +33,7 @@ class Server:
 
         while 1:
             c, addr = self.s.accept()
-            print(c)
+            # print(c)
 
             threading.Thread(target=self.handle_client,args=(c,addr,)).start()
 
@@ -41,20 +41,19 @@ class Server:
         received_data = c.recv(1024).decode()
         print("received_data="+received_data)
         obj = json.loads(received_data)
-        print(obj)
+        # print(obj)
         c.send("OK".encode())
 
         write_name = 'test' + '.recd'
         if os.path.exists(write_name): os.remove(write_name)
 
-        with open(write_name,'wb') as file:
-            while 1:
-                data = c.recv(1024)
-                if not data:
-                    break
-                file.write(data)
-            file.close()
-        print(write_name,'successfully downloaded.')
+        total_data = 0
+        while 1:
+            data = c.recv(1024)
+            if not data:
+                break
+            total_data += len(data)
+        print(write_name,'successfully downloaded. total_data=%d' % (total_data))
 
 
 # In[3]:

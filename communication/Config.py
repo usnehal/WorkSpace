@@ -15,6 +15,7 @@ class Config():
         self.embedding_dim = 256 
         self.units = 512
         self.server_ip = 'localhost'
+        # self.server_ip = '35.200.232.85'
         self.server_port = 5001
 
         host = socket.gethostname()
