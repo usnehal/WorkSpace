@@ -2,7 +2,7 @@
 import  socket
 
 class Config():
-    def __init__(self):
+    def __init__(self, server_ip):
         self.host = None
         self.HOST_NIMBLE = 1
         self.HOST_WSL = 2
@@ -14,7 +14,10 @@ class Config():
         self.batch_size = 32
         self.embedding_dim = 256 
         self.units = 512
-        self.server_ip = 'localhost'
+        if(server_ip != None):
+            self.server_ip = server_ip
+        else:
+            self.server_ip = 'localhost'
         # self.server_ip = '35.200.232.85'
         self.server_port = 5002
 

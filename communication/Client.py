@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 import socket
@@ -13,12 +13,23 @@ import numpy as np
 from   nltk.translate.bleu_score import sentence_bleu
 import random
 import  re
-import sys, getopt
+import sys
+import argparse
 
-
-from Config import Config
+from   Config import Config
 import Util
 import Logger
+
+
+# In[7]:
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-s', '--server', action='store', type=str, required=False)
+args, unknown = parser.parse_known_args()
+print(args.server)
+
+server_ip = args.server
 
 
 # In[ ]:
@@ -65,7 +76,7 @@ class Client:
 # In[ ]:
 
 
-cfg = Config()
+cfg = Config(server_ip)
 client = Client(cfg)
 
 
