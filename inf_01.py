@@ -1,38 +1,27 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # EYE FOR BLIND
-# This notebook will be used to prepare the capstone project 'Eye for Blind'
-
-# In[1]:
-
-
-# from google.colab import drive
-# drive.mount('/content/drive')
-
-
 # In[2]:
 
-
 #Import all the required libraries
-import time
-import re
-import pandas as pd
-import numpy as np
-from skimage import io
-import random
-from collections import Counter
-from tensorflow.keras.preprocessing.text import Tokenizer
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers,Model
-from tqdm import tqdm
-from nltk.translate.bleu_score import sentence_bleu
-import socket
-import pickle5 as pickle
-from tensorflow.keras.activations import tanh
-from tensorflow.keras.activations import softmax
-import matplotlib.pyplot as plt
+import  time
+import  re
+import  pandas as pd
+import  numpy as np
+from    skimage import io
+import  random
+from    collections import Counter
+from    tensorflow.keras.preprocessing.text import Tokenizer
+import  tensorflow as tf
+from    tensorflow import keras
+from    tensorflow.keras import layers,Model
+from    tqdm import tqdm
+from    nltk.translate.bleu_score import sentence_bleu
+import  socket
+import  pickle5 as pickle
+from    tensorflow.keras.activations import tanh
+from    tensorflow.keras.activations import softmax
+import  matplotlib.pyplot as plt
 
 # In[3]:
 
@@ -69,7 +58,7 @@ list_file = './lists/images_' + str(total_test_images) + '.txt'
 
 # In[18]:
 
-max_tokenized_words = 10000
+max_tokenized_words = 20000
 MAX_SEQ_LENGTH = 25
 batch_size = 32
 embedding_dim = 256 
@@ -209,6 +198,7 @@ class Decoder(Model):
 s = tf.zeros([32, 64, 2048], tf.int32)
 
 encoder=Encoder(embedding_dim)
+
 
 decoder=Decoder(embedding_dim, units, vocab_size)
 
