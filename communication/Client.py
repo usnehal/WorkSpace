@@ -13,6 +13,8 @@ import numpy as np
 from   nltk.translate.bleu_score import sentence_bleu
 import random
 import  re
+import sys, getopt
+
 
 from Config import Config
 import Util
@@ -65,7 +67,6 @@ class Client:
 
 cfg = Config()
 client = Client(cfg)
-file_name = '/home/suphale/WorkSpace/000000350497.jpg'
 
 
 # In[ ]:
@@ -87,12 +88,6 @@ if False:
         t1 = time.perf_counter() - t0
 
         print("Time to send file: %.3f" % (t1))
-
-
-# In[ ]:
-
-
-data_buffer,caption = Util.read_image(file_name,'')
 
 
 # In[ ]:
@@ -126,7 +121,7 @@ def evaluate_over_server(file_name):
     pred_caption = client.send_data(str(app_json), byte_buffer_to_send)
     t1 = time.perf_counter() - t0
 
-    print("Time to send data: %.3f" % (t1))
+    # print("Time to send data: %.3f" % (t1))
 
     return pred_caption, [], []
 
@@ -234,6 +229,7 @@ doc = load_doc(cfg.text_file)
 total_time = 0.0
 max_test_images = cfg.total_test_images
 for i in range(max_test_images):
+    print("")
     random_num = random.randint(0,total_num_images-1)
     img_path = all_img_vector[random_num]
     # image = io.imread(img_path)

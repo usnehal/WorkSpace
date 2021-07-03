@@ -54,6 +54,7 @@ class Server:
             threading.Thread(target=self.handle_client,args=(c,addr,)).start()
 
     def handle_client(self,c,addr):
+        print(addr)
         Logger.debug_print("handle_client:Entry")
         received_data = c.recv(1024).decode()
         Logger.debug_print("handle_client:received_data="+received_data)
@@ -193,13 +194,13 @@ class TailModel:
     def __init__(self,cfg):
         self.cfg = cfg
 
-        with open('saved_model/tokenizer.pickle', 'rb') as handle:
+        with open(self.cfg.saved_model_path + '/tokenizer.pickle', 'rb') as handle:
             self.tokenizer = pickle.load(handle)
         
-        with open('saved_model/image_features_extract_model.json', 'r') as json_file:
+        with open(self.cfg.saved_model_path + '/image_features_extract_model.json', 'r') as json_file:
             json_savedModel= json_file.read()
         self.image_features_extract_model = tf.keras.models.model_from_json(json_savedModel)
-        self.image_features_extract_model.load_weights('saved_model/image_features_extract_model.h5')
+        self.image_features_extract_model.load_weights(self.cfg.saved_model_path + '/image_features_extract_model.h5')
         vocab_size = cfg.max_tokenized_words + 1
 
         s = tf.zeros([32, 64, 2048], tf.int32)
@@ -215,8 +216,8 @@ class TailModel:
 
         predictions, hidden_out, attention_weights= self.decoder(dec_input, features, hidden)
 
-        self.decoder.load_weights("saved_model/decoder.h5")
-        self.encoder.load_weights("saved_model/encoder.h5")
+        self.decoder.load_weights(self.cfg.saved_model_path + "/decoder.h5")
+        self.encoder.load_weights(self.cfg.saved_model_path + "/encoder.h5")
 
     def evaluate(self,image):
         attention_features_shape = 64

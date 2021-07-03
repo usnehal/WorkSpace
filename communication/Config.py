@@ -19,26 +19,24 @@ class Config():
         self.server_port = 5002
 
         host = socket.gethostname()
+        self.workspace_path = '/home/suphale/WorkSpace' 
+        self.images_path = None
         if('cuda' in host):
             self.host = self.HOST_NIMBLE
+            self.workspace_path='/mnt/disks/user/project/WorkSpace'
             print("In NimbleBox")
         if(host == 'LTsuphale-NC2JM'):
             self.host = self.HOST_WSL
             print("In WSL")
         if(host == 'raspberrypi'):
             self.host = self.HOST_PI
+            self.images_path='/home/pi/WorkSpace'
             print("In raspberry-pi")
+        self.images_path = self.workspace_path + '/test_images'
+        self.saved_model_path = self.workspace_path + '/saved_model'
 
-        self.images_path = None
-        if(self.host == self.HOST_WSL):
-            self.images_path='/home/suphale/WorkSpace/test_images'
-        if(self.host == self.HOST_NIMBLE):
-            self.images_path='/mnt/disks/user/project/coco/train2017/'
-        if(self.host == self.HOST_PI):
-            self.images_path='/home/pi/WorkSpace/test_images/'
-
-        self.text_file = './lists/captions_' + str(self.total_test_images) + '.txt'
-        self.list_file = './lists/images_' + str(self.total_test_images) + '.txt'
+        self.text_file = self.workspace_path + '/lists/captions_' + str(self.total_test_images) + '.txt'
+        self.list_file = self.workspace_path + '/lists/images_' + str(self.total_test_images) + '.txt'
 
 
     def __getitem__(self):
