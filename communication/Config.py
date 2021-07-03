@@ -33,7 +33,7 @@ class Config():
             print("In WSL")
         if(host == 'raspberrypi'):
             self.host = self.HOST_PI
-            self.images_path='/home/pi/WorkSpace'
+            self.workspace_path='/home/pi/WorkSpace'
             print("In raspberry-pi")
         self.images_path = self.workspace_path + '/test_images'
         self.saved_model_path = self.workspace_path + '/saved_model'
