@@ -18,6 +18,7 @@ from   tensorflow.keras.activations import tanh
 from   tensorflow.keras.activations import softmax
 
 from Config import Config
+import Logger
 
 
 # In[ ]:
@@ -53,37 +54,43 @@ class Server:
             threading.Thread(target=self.handle_client,args=(c,addr,)).start()
 
     def handle_client(self,c,addr):
+        Logger.debug_print("handle_client:Entry")
         received_data = c.recv(1024).decode()
-        print("received_data="+received_data)
+        Logger.debug_print("handle_client:received_data="+received_data)
         obj = json.loads(received_data)
-        print(obj)
+        Logger.debug_print(obj)
         tensor_shape = obj['data_shape']
+        Logger.debug_print("handle_client:sending OK")
         c.send("OK".encode())
 
-        write_name = 'test' + '.recd'
-        if os.path.exists(write_name): os.remove(write_name)
-
+        max_data_to_be_received = obj['data_size']
         total_data = 0
         msg = bytearray()
         while 1:
+            # print("handle_client:calling recv total_data=%d data_size=%d" % (total_data, max_data_to_be_received))
+            if(total_data >= max_data_to_be_received):
+                Logger.debug_print("handle_client:received all data")
+                break
             data = c.recv(1024)
             # print(type(data))
             msg.extend(data)
             if not data:
+                Logger.debug_print("handle_client:while break")
                 break
             total_data += len(data)
         
-        print('total size of msg=%d' % (len(msg)))
+        Logger.debug_print('total size of msg=%d' % (len(msg)))
         
         generated_np_array = np.frombuffer(msg, dtype=float32)
-
         generated_image_np_array = generated_np_array.reshape(tensor_shape)
         generate_image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
-        print(generate_image_tensor.shape)
         result, attention_plot,pred_test  = tailModel.evaluate(generate_image_tensor)
         pred_caption=' '.join(result).rsplit(' ', 1)[0]
+
+        Logger.debug_print("handle_client:sending pred_caption" + pred_caption)
+        c.send(pred_caption.encode())
         # candidate = pred_caption.split()
-        print ('Pred:', pred_caption)
+        Logger.debug_print ('Pred:' + pred_caption)
 
 
 # In[ ]:
@@ -250,7 +257,6 @@ class TailModel:
         return result, attention_plot,predictions
 
     def extract_image_features(self, sample_img_batch):
-        print("extract_image_features shape=" + str(tf.shape(sample_img_batch)))
         features = self.image_features_extract_model(sample_img_batch)
         features = tf.reshape(features, [sample_img_batch.shape[0],8*8, 2048])
         return features

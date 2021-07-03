@@ -16,7 +16,7 @@ class Config():
         self.units = 512
         self.server_ip = 'localhost'
         # self.server_ip = '35.200.232.85'
-        self.server_port = 5000
+        self.server_port = 5002
 
         host = socket.gethostname()
         if('cuda' in host):

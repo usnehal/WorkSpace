@@ -78,6 +78,8 @@ target/
 .ipynb_checkpoints
 ckpt
 communication/test.recd
+communication/lists
+communication/saved_model
 
 temp_model
 
