@@ -2,6 +2,8 @@ import time
 from tabulate import tabulate
 import pandas as pd
 
+import Logger
+
 class TimeKeeper:
     def __init__(self):
         self.pretty_df = pd.DataFrame(columns=['Image','BLEU','Total_Time','Comm_Time'])
@@ -45,12 +47,12 @@ class TimeKeeper:
         pass
 
     def printAll(self):
-        print(tabulate(self.pretty_df, headers='keys', tablefmt='psql'))
+        Logger.event_print(tabulate(self.pretty_df, headers='keys', tablefmt='psql'))
 
     def summary(self):
         df = pd.DataFrame(self.records)
         df_t = df.T
         # df_t.to_csv("TimeKeeper.csv")
-        print("Average BLEU : %.2f" % (df_t[self.I_BLEU].mean()))
-        print("Average client processing : %.2f s" % (df_t[self.I_CLIENT_PROCESSING_TIME].mean()))
-        print("Average communication time : %.2f s" % (df_t[self.I_COMMUNICATION_TIME].mean()))
+        Logger.milestone_print("Average BLEU : %.2f" % (df_t[self.I_BLEU].mean()))
+        Logger.milestone_print("Average client processing : %.2f s" % (df_t[self.I_CLIENT_PROCESSING_TIME].mean()))
+        Logger.milestone_print("Average communication time : %.2f s" % (df_t[self.I_COMMUNICATION_TIME].mean()))

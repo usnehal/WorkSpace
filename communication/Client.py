@@ -35,15 +35,30 @@ from TimeKeeper import TimeKeeper
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--server', action='store', type=str, required=False)
+parser.add_argument('-t', '--test_number', action='store', type=int, required=False)
+parser.add_argument('-v', '--verbose', action='store', type=int, required=False)
 args, unknown = parser.parse_known_args()
 print(args.server)
 
 server_ip = args.server
+test_number = args.test_number
+verbose = args.verbose
+
+if(verbose == None):
+    verbose = 1
+
+if(test_number == None):
+    test_number = 1
+
+test_scenarios = {1:"Complete jpg file buffer transfer", 2:"Decoded image buffer transfer"}
+
+print("Test scenario = %d %s" % (test_number, test_scenarios[test_number]))
 
 
 # In[ ]:
 
 
+Logger.set_log_level(verbose)
 tk = TimeKeeper()
 cfg = Config(server_ip)
 client = Client(cfg)
@@ -135,7 +150,7 @@ def evaluate_over_server(file_name):
 total_time = 0.0
 max_test_images = cfg.total_test_images
 for i in range(max_test_images):
-    print("")
+    Logger.event_print("")
     random_num = random.randint(0,max_test_images-1)
     img_path = imagesInfo.getImagePath(random_num)
     # image = io.imread(img_path)
@@ -146,8 +161,10 @@ for i in range(max_test_images):
     tk.startRecord(img_path)
     tk.logTime(img_path, tk.E_START_CLIENT_PROCESSING)
 
-    # pred_caption, attention_plot,pred_test = evaluate_over_server(img_path)
-    pred_caption, attention_plot,pred_test = evaluate_file_over_server(img_path)
+    if(test_number == 1):
+        pred_caption, attention_plot,pred_test = evaluate_over_server(img_path)
+    if(test_number == 2):
+        pred_caption, attention_plot,pred_test = evaluate_file_over_server(img_path)
 
     tk.logTime(img_path, tk.E_STOP_CLIENT_PROCESSING)
 
@@ -163,9 +180,9 @@ for i in range(max_test_images):
     tk.logInfo(img_path, tk.I_PRED_CAPTION, pred_caption)
     tk.finishRecord(img_path)
 
-    print("BLEU: %.2f" % (score))
-    print ('Real:', real_caption)
-    print ('Pred:', pred_caption)
+    Logger.event_print("BLEU: %.2f" % (score))
+    Logger.event_print ('Real: %s' % (real_caption))
+    Logger.event_print ('Pred: %s' % (pred_caption))
 
 tk.printAll()
 tk.summary()
