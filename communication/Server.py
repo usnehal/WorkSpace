@@ -18,10 +18,12 @@ import pickle5 as pickle
 from   tensorflow.keras.preprocessing.text import Tokenizer
 from   tensorflow.keras.activations import tanh
 from   tensorflow.keras.activations import softmax
+from   numpy import float32
 
 from Config import Config
 import Logger
 from Communication import Server
+import Util
 
 
 # In[ ]:
@@ -187,7 +189,23 @@ class TailModel:
         attention_plot = attention_plot[:len(result), :]
         return result, attention_plot,predictions
 
-    def process_image_tensor(self,image_tensor):
+    def process_image_file(self,msg,shape):
+        temp_file = '/tmp/temp.bin'
+        f = open(temp_file, "wb")
+        f.write(msg)
+        f.close()
+
+        image_tensor,label = Util.read_image(temp_file,[])
+
+        result, attention_plot,pred_test  = self.evaluate(image_tensor)
+        pred_caption=' '.join(result).rsplit(' ', 1)[0]
+        return pred_caption
+
+    def process_image_tensor(self,msg,shape):
+        generated_np_array = np.frombuffer(msg, dtype=float32)
+        generated_image_np_array = generated_np_array.reshape(shape)
+        image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
+
         result, attention_plot,pred_test  = self.evaluate(image_tensor)
         pred_caption=' '.join(result).rsplit(' ', 1)[0]
         return pred_caption
@@ -205,6 +223,7 @@ cfg = Config(None)
 tailModel = TailModel(cfg)
 server = Server(cfg, tailModel)
 server.register_callback('data',tailModel.process_image_tensor)
+server.register_callback('file',tailModel.process_image_file)
 server.accept_connections()
 
 

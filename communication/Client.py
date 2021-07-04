@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 #!/usr/bin/env python3
 
 
-# In[2]:
+# In[ ]:
 
 
 import socket
@@ -30,7 +30,7 @@ from ImagesInfo import ImagesInfo
 from TimeKeeper import TimeKeeper
 
 
-# In[3]:
+# In[ ]:
 
 
 parser = argparse.ArgumentParser()
@@ -41,7 +41,7 @@ print(args.server)
 server_ip = args.server
 
 
-# In[4]:
+# In[ ]:
 
 
 tk = TimeKeeper()
@@ -50,7 +50,7 @@ client = Client(cfg)
 imagesInfo = ImagesInfo(cfg)
 
 
-# In[5]:
+# In[ ]:
 
 
 if False:
@@ -69,15 +69,36 @@ if False:
         t1 = time.perf_counter() - t0
 
         print("Time to send file: %.3f" % (t1))
+def evaluate_file_over_server(file_name):
+    with open(file_name, 'rb') as file_t:
+        byte_buffer_to_send = bytearray(file_t.read())
+        send_json_dict = {}
+        send_json_dict['data_type'] = 'file'
+        send_json_dict['file_name'] = file_name
+        send_json_dict['data_size'] = (len(byte_buffer_to_send))
+        send_json_dict['data_shape'] = "(%d,)" % (len(byte_buffer_to_send))
+        # send_json_dict['data_buffer'] = blob_data
+
+        app_json = json.dumps(send_json_dict)
+
+        tk.logInfo(img_path, tk.I_BUFFER_SIZE, len(byte_buffer_to_send))
+
+        tk.logTime(img_path, tk.E_START_COMMUNICATION)
+
+        pred_caption = client.send_data(str(app_json), byte_buffer_to_send)
+
+        tk.logTime(img_path, tk.E_STOP_COMMUNICATION)
+
+        return pred_caption, [], []
 
 
-# In[6]:
+# In[ ]:
 
 
 # tf.compat.v1.disable_eager_execution()
 
 
-# In[7]:
+# In[ ]:
 
 
 def evaluate_over_server(file_name):
@@ -107,7 +128,7 @@ def evaluate_over_server(file_name):
     return pred_caption, [], []
 
 
-# In[8]:
+# In[ ]:
 
 
 
@@ -125,7 +146,8 @@ for i in range(max_test_images):
     tk.startRecord(img_path)
     tk.logTime(img_path, tk.E_START_CLIENT_PROCESSING)
 
-    pred_caption, attention_plot,pred_test = evaluate_over_server(img_path)
+    # pred_caption, attention_plot,pred_test = evaluate_over_server(img_path)
+    pred_caption, attention_plot,pred_test = evaluate_file_over_server(img_path)
 
     tk.logTime(img_path, tk.E_STOP_CLIENT_PROCESSING)
 

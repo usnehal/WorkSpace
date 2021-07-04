@@ -118,15 +118,11 @@ class Server:
         
         Logger.debug_print('total size of msg=%d' % (len(msg)))
         
-        generated_np_array = np.frombuffer(msg, dtype=float32)
-        generated_image_np_array = generated_np_array.reshape(tensor_shape)
-        generate_image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
 
         pred_caption = ''
         if data_type in self.callbacks :
-            # this object/event pair has a callback, call it
             callback = self.callbacks[data_type]
-            pred_caption = callback(generate_image_tensor)
+            pred_caption = callback(msg,tensor_shape)
         # result, attention_plot,pred_test  = tailModel.evaluate(generate_image_tensor)
         # pred_caption=' '.join(result).rsplit(' ', 1)[0]
 
