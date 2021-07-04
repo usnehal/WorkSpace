@@ -19,6 +19,8 @@ from   tensorflow.keras.preprocessing.text import Tokenizer
 from   tensorflow.keras.activations import tanh
 from   tensorflow.keras.activations import softmax
 from   numpy import float32
+import json
+import time
 
 from Config import Config
 import Logger
@@ -197,9 +199,19 @@ class TailModel:
 
         image_tensor,label = Util.read_image(temp_file,[])
 
+        t0 = time.perf_counter()
         result, attention_plot,pred_test  = self.evaluate(image_tensor)
+        t1 = time.perf_counter() - t0
         pred_caption=' '.join(result).rsplit(' ', 1)[0]
-        return pred_caption
+
+        send_json_dict = {}
+        send_json_dict['response'] = 'OK'
+        send_json_dict['pred_caption'] = pred_caption
+        send_json_dict['tail_model_time'] = t1
+
+        app_json = json.dumps(send_json_dict)
+
+        return str(app_json)
 
     def process_image_tensor(self,msg,shape):
         generated_np_array = np.frombuffer(msg, dtype=float32)

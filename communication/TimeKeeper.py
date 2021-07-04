@@ -19,6 +19,7 @@ class TimeKeeper:
         self.I_PRED_CAPTION = 'I_PRED_CAPTION'
         self.I_CLIENT_PROCESSING_TIME = 'I_CLIENT_PROCESSING_TIME'
         self.I_COMMUNICATION_TIME = 'I_COMMUNICATION_TIME'
+        self.I_TAIL_MODEL_TIME = 'I_TAIL_MODEL_TIME'
 
         self.records = {}
 
@@ -52,8 +53,18 @@ class TimeKeeper:
     def summary(self):
         df = pd.DataFrame(self.records)
         df_t = df.T
+        
         # df_t.to_csv("TimeKeeper.csv")
-        Logger.milestone_print("Average BLEU                    : %.2f" % (df_t[self.I_BLEU].mean()))
-        Logger.milestone_print("Average client processing       : %.2f s" % (df_t[self.I_CLIENT_PROCESSING_TIME].mean()))
-        Logger.milestone_print("Average communication time      : %.2f s" % (df_t[self.I_COMMUNICATION_TIME].mean()))
-        Logger.milestone_print("Average communication payload   : " + f"{int(df_t[self.I_BUFFER_SIZE].mean()):,d}")
+        average_bleu = df_t[self.I_BLEU].mean()
+        average_inference_time = df_t[self.I_CLIENT_PROCESSING_TIME].mean()
+        average_head_model_time = df_t[self.I_CLIENT_PROCESSING_TIME].mean() - df_t[self.I_COMMUNICATION_TIME].mean()
+        average_communication_time = df_t[self.I_COMMUNICATION_TIME].mean() - df_t[self.I_TAIL_MODEL_TIME].mean()
+        average_tail_model_time = df_t[self.I_TAIL_MODEL_TIME].mean()
+        average_communication_payload = int(df_t[self.I_BUFFER_SIZE].mean())
+
+        Logger.milestone_print("Average BLEU                    : %.2f" % (average_bleu))
+        Logger.milestone_print("Average inference time          : %.2f s" % (average_inference_time))
+        Logger.milestone_print("Average head model time         : %.2f s" % (average_head_model_time))
+        Logger.milestone_print("Average communication time      : %.2f s" % (average_communication_time))
+        Logger.milestone_print("Average tail model time         : %.2f s" % (average_tail_model_time))
+        Logger.milestone_print("Average communication payload   : " + f"{int(average_communication_payload):,d}")

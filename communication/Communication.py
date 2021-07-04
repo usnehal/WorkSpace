@@ -119,15 +119,15 @@ class Server:
         Logger.debug_print('total size of msg=%d' % (len(msg)))
         
 
-        pred_caption = ''
+        response = ''
         if data_type in self.callbacks :
             callback = self.callbacks[data_type]
-            pred_caption = callback(msg,tensor_shape)
+            response = callback(msg,tensor_shape)
         # result, attention_plot,pred_test  = tailModel.evaluate(generate_image_tensor)
         # pred_caption=' '.join(result).rsplit(' ', 1)[0]
 
-        Logger.debug_print("handle_client:sending pred_caption" + pred_caption)
-        c.send(pred_caption.encode())
+        Logger.debug_print("handle_client:sending pred_caption" + response)
+        c.send(response.encode())
         # candidate = pred_caption.split()
-        Logger.debug_print ('Pred:' + pred_caption)
+        Logger.debug_print ('response:' + response)
         
