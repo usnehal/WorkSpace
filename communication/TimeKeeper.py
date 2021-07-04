@@ -50,7 +50,7 @@ class TimeKeeper:
     def summary(self):
         df = pd.DataFrame(self.records)
         df_t = df.T
-        df_t.to_csv("TimeKeeper.csv")
+        # df_t.to_csv("TimeKeeper.csv")
         print("Average BLEU : %.2f" % (df_t[self.I_BLEU].mean()))
         print("Average client processing : %.2f s" % (df_t[self.I_CLIENT_PROCESSING_TIME].mean()))
         print("Average communication time : %.2f s" % (df_t[self.I_COMMUNICATION_TIME].mean()))

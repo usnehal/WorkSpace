@@ -19,7 +19,7 @@ class Config():
         else:
             self.server_ip = 'localhost'
         # self.server_ip = '35.200.232.85'
-        self.server_port = 5000
+        self.server_port = 5001
 
         host = socket.gethostname()
         self.workspace_path = '/home/suphale/WorkSpace' 
