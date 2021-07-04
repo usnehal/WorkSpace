@@ -4,12 +4,6 @@
 # In[ ]:
 
 
-#!/usr/bin/env python
-
-
-# In[ ]:
-
-
 import socket
 import threading
 import os
@@ -30,7 +24,6 @@ import Logger
 # In[ ]:
 
 
-request_count = 0
 class Server:
     def __init__(self,cfg,tailModel):
         self.cfg = cfg
@@ -61,10 +54,7 @@ class Server:
             threading.Thread(target=self.handle_client,args=(c,addr,)).start()
 
     def handle_client(self,c,addr):
-        global request_count
-        # print(addr)
-        print('%d' % (request_count), end ="\r") 
-        request_count = request_count + 1
+        print(addr)
         Logger.debug_print("handle_client:Entry")
         received_data = c.recv(1024).decode()
         Logger.debug_print("handle_client:received_data="+received_data)
@@ -276,7 +266,7 @@ class TailModel:
 # In[ ]:
 
 
-cfg = Config(None)
+cfg = Config()
 tailModel = TailModel(cfg)
 server = Server(cfg, tailModel)
 
