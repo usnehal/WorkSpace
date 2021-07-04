@@ -218,9 +218,19 @@ class TailModel:
         generated_image_np_array = generated_np_array.reshape(shape)
         image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
 
+        t0 = time.perf_counter()
         result, attention_plot,pred_test  = self.evaluate(image_tensor)
+        t1 = time.perf_counter() - t0
         pred_caption=' '.join(result).rsplit(' ', 1)[0]
-        return pred_caption
+
+        send_json_dict = {}
+        send_json_dict['response'] = 'OK'
+        send_json_dict['pred_caption'] = pred_caption
+        send_json_dict['tail_model_time'] = t1
+
+        app_json = json.dumps(send_json_dict)
+
+        return str(app_json)
         
     def extract_image_features(self, sample_img_batch):
         features = self.image_features_extract_model(sample_img_batch)
