@@ -162,9 +162,9 @@ for i in range(max_test_images):
     tk.logTime(img_path, tk.E_START_CLIENT_PROCESSING)
 
     if(test_number == 1):
-        pred_caption, attention_plot,pred_test = evaluate_over_server(img_path)
-    if(test_number == 2):
         pred_caption, attention_plot,pred_test = evaluate_file_over_server(img_path)
+    if(test_number == 2):
+        pred_caption, attention_plot,pred_test = evaluate_over_server(img_path)
 
     tk.logTime(img_path, tk.E_STOP_CLIENT_PROCESSING)
 
