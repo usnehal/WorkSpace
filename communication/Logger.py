@@ -24,8 +24,8 @@ def debug_print(str):
 
 def event_print(str):
     if(debug_level >= 1):
-        print(bcolors.OKCYAN + str)
+        print(bcolors.OKCYAN + str + bcolors.ENDC)
 
 def milestone_print(str):
     if(debug_level >= 0):
-        print(bcolors.OKGREEN + str)
+        print(bcolors.OKGREEN + str + bcolors.ENDC)

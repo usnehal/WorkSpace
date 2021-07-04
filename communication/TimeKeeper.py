@@ -56,4 +56,4 @@ class TimeKeeper:
         Logger.milestone_print("Average BLEU                    : %.2f" % (df_t[self.I_BLEU].mean()))
         Logger.milestone_print("Average client processing       : %.2f s" % (df_t[self.I_CLIENT_PROCESSING_TIME].mean()))
         Logger.milestone_print("Average communication time      : %.2f s" % (df_t[self.I_COMMUNICATION_TIME].mean()))
-        Logger.milestone_print("Average communication payload   : %.2f s" % (df_t[self.I_BUFFER_SIZE].mean()))
+        Logger.milestone_print("Average communication payload   : " + f"{int(df_t[self.I_BUFFER_SIZE].mean()):,d}")
