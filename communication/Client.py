@@ -142,9 +142,15 @@ def evaluate_over_server(file_name):
 
     tk.logTime(img_path, tk.E_START_COMMUNICATION)
 
-    pred_caption = client.send_data(str(app_json), byte_buffer_to_send)
+    response = client.send_data(str(app_json), byte_buffer_to_send)
 
     tk.logTime(img_path, tk.E_STOP_COMMUNICATION)
+
+    response = json.loads(response)
+
+    pred_caption = response['pred_caption']
+    tail_model_time = response['tail_model_time']
+    tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, tail_model_time)
 
     return pred_caption, [], []
 
