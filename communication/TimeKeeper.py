@@ -39,8 +39,8 @@ class TimeKeeper:
         pretty_record = {}
         pretty_record['Image'] = image.rsplit('/', 1)[-1]
         pretty_record['BLEU'] = "{:.02f}".format(self.records[image][self.I_BLEU])
-        pretty_record['Total_Time'] = "{:.02f}".format(self.records[image][self.I_BLEU])
-        pretty_record['Comm_Time'] = "{:.02f}".format(self.records[image][self.I_BLEU])
+        pretty_record['Total_Time'] = "{:.02f}".format(self.records[image][self.I_CLIENT_PROCESSING_TIME])
+        pretty_record['Comm_Time'] = "{:.02f}".format(self.records[image][self.I_COMMUNICATION_TIME])
         self.pretty_df = self.pretty_df.append(pretty_record,ignore_index=True)
         pass
 
@@ -50,8 +50,7 @@ class TimeKeeper:
     def summary(self):
         df = pd.DataFrame(self.records)
         df_t = df.T
+        df_t.to_csv("TimeKeeper.csv")
         print("Average BLEU : %.2f" % (df_t[self.I_BLEU].mean()))
         print("Average client processing : %.2f s" % (df_t[self.I_CLIENT_PROCESSING_TIME].mean()))
         print("Average communication time : %.2f s" % (df_t[self.I_COMMUNICATION_TIME].mean()))
-
-        pass

@@ -30,13 +30,23 @@ import Logger
 # In[ ]:
 
 
-request_count = 0
+
 class Server:
     def __init__(self,cfg,tailModel):
         self.cfg = cfg
         self.tailModel = tailModel
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.accept_connections()
+        self.request_count = 0
+        self.callbacks = {}
+
+        # self.accept_connections()
+
+    def register_callback(self, obj, callback):
+        print('register_callback obj='+obj)
+        if obj not in self.callbacks:
+            self.callbacks[obj] = None
+        self.callbacks[obj] = callback
+        print('register_callback self.callbacks=%s' % (str(self.callbacks)))
     
     def accept_connections(self):
         ip = '' 
@@ -61,15 +71,16 @@ class Server:
             threading.Thread(target=self.handle_client,args=(c,addr,)).start()
 
     def handle_client(self,c,addr):
-        global request_count
+        # global request_count
         # print(addr)
-        print('%d' % (request_count), end ="\r") 
-        request_count = request_count + 1
+        print('%d' % (self.request_count), end ="\r") 
+        self.request_count = self.request_count + 1
         Logger.debug_print("handle_client:Entry")
         received_data = c.recv(1024).decode()
         Logger.debug_print("handle_client:received_data="+received_data)
         obj = json.loads(received_data)
         Logger.debug_print(obj)
+        data_type = obj['data_type']
         tensor_shape = obj['data_shape']
         Logger.debug_print("handle_client:sending OK")
         c.send("OK".encode())
@@ -95,8 +106,14 @@ class Server:
         generated_np_array = np.frombuffer(msg, dtype=float32)
         generated_image_np_array = generated_np_array.reshape(tensor_shape)
         generate_image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
-        result, attention_plot,pred_test  = tailModel.evaluate(generate_image_tensor)
-        pred_caption=' '.join(result).rsplit(' ', 1)[0]
+
+        pred_caption = ''
+        if data_type in self.callbacks :
+            # this object/event pair has a callback, call it
+            callback = self.callbacks[data_type]
+            pred_caption = callback(generate_image_tensor)
+        # result, attention_plot,pred_test  = tailModel.evaluate(generate_image_tensor)
+        # pred_caption=' '.join(result).rsplit(' ', 1)[0]
 
         Logger.debug_print("handle_client:sending pred_caption" + pred_caption)
         c.send(pred_caption.encode())
@@ -267,18 +284,31 @@ class TailModel:
         attention_plot = attention_plot[:len(result), :]
         return result, attention_plot,predictions
 
+    def process_image_tensor(self,image_tensor):
+        result, attention_plot,pred_test  = self.evaluate(image_tensor)
+        pred_caption=' '.join(result).rsplit(' ', 1)[0]
+        return pred_caption
+        
     def extract_image_features(self, sample_img_batch):
         features = self.image_features_extract_model(sample_img_batch)
         features = tf.reshape(features, [sample_img_batch.shape[0],8*8, 2048])
         return features
 
 
-# In[ ]:
+# In[8]:
 
 
 cfg = Config(None)
 tailModel = TailModel(cfg)
 server = Server(cfg, tailModel)
+server.register_callback('data',tailModel.process_image_tensor)
+server.accept_connections()
+
+
+# In[ ]:
+
+
+server.callbacks
 
 
 # In[ ]:

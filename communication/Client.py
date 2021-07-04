@@ -25,7 +25,7 @@ import argparse
 from   Config import Config
 import Util
 import Logger
-from   ClientComm import Client
+from   Communication import Client
 from ImagesInfo import ImagesInfo
 from TimeKeeper import TimeKeeper
 
