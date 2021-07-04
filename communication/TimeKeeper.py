@@ -38,9 +38,9 @@ class TimeKeeper:
         record = self.records[image]
         pretty_record = {}
         pretty_record['Image'] = image.rsplit('/', 1)[-1]
-        pretty_record['BLEU'] = "{:.2f}".format(self.records[image][self.I_BLEU])
-        pretty_record['Total_Time'] = "{:.2f}".format(self.records[image][self.I_BLEU])
-        pretty_record['Comm_Time'] = "{:.2f}".format(self.records[image][self.I_BLEU])
+        pretty_record['BLEU'] = "{:.02f}".format(self.records[image][self.I_BLEU])
+        pretty_record['Total_Time'] = "{:.02f}".format(self.records[image][self.I_BLEU])
+        pretty_record['Comm_Time'] = "{:.02f}".format(self.records[image][self.I_BLEU])
         self.pretty_df = self.pretty_df.append(pretty_record,ignore_index=True)
         pass
 

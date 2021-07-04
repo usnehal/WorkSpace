@@ -149,12 +149,6 @@ tk.printAll()
 tk.summary()
 
 
-# In[9]:
-
-
-type(tk.records['/home/suphale/WorkSpace/test_images/000000130972.jpg']['I_COMMUNICATION_TIME'])
-
-
 # In[ ]:
 
 
