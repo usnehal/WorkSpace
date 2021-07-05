@@ -80,7 +80,8 @@ ckpt
 communication/test.recd
 communication/lists
 communication/saved_model
-
+image_at_epoch_*
+communication/image_at_epoch_*
 temp_model
 
 # IPython
