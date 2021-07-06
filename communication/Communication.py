@@ -6,6 +6,7 @@ import threading
 import json
 import numpy as np
 import tensorflow as tf
+import zlib
 
 class Client:
     def __init__(self,cfg):
@@ -97,6 +98,7 @@ class Server:
         Logger.debug_print(obj)
         data_type = obj['data_type']
         tensor_shape = obj['data_shape']
+        zlib_compression = obj['zlib_compression']
         Logger.debug_print("handle_client:sending OK")
         c.send("OK".encode())
 
@@ -118,6 +120,9 @@ class Server:
         
         Logger.debug_print('total size of msg=%d' % (len(msg)))
         
+        if(zlib_compression == 'yes'):
+            msg = zlib.decompress(msg)
+
 
         response = ''
         if data_type in self.callbacks :
