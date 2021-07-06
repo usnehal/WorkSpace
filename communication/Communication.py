@@ -98,7 +98,10 @@ class Server:
         Logger.debug_print(obj)
         data_type = obj['data_type']
         tensor_shape = obj['data_shape']
-        zlib_compression = obj['zlib_compression']
+        if 'zlib_compression' in obj.keys():
+            zlib_compression = obj['zlib_compression']
+        else:
+            zlib_compression = False
         Logger.debug_print("handle_client:sending OK")
         c.send("OK".encode())
 

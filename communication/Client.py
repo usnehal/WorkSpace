@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 #!/usr/bin/env python3
 
 
-# In[ ]:
+# In[2]:
 
 
 import socket
@@ -21,6 +21,7 @@ import random
 import  re
 import sys
 import argparse
+import zlib
 
 from   Config import Config
 import Util
@@ -30,7 +31,7 @@ from ImagesInfo import ImagesInfo
 from TimeKeeper import TimeKeeper
 
 
-# In[ ]:
+# In[3]:
 
 
 parser = argparse.ArgumentParser()
@@ -48,14 +49,16 @@ if(verbose == None):
     verbose = 1
 
 if(test_number == None):
-    test_number = 1
+    test_number = 3
 
-test_scenarios = {1:"Complete jpg file buffer transfer", 2:"Decoded image buffer transfer"}
+test_scenarios = {1:"Complete jpg file buffer transfer", 
+                    2:"Decoded image buffer transfer",
+                    3:"Decoded image buffer transfer with zlib compression"}
 
 print("Test scenario = %d %s" % (test_number, test_scenarios[test_number]))
 
 
-# In[ ]:
+# In[4]:
 
 
 Logger.set_log_level(verbose)
@@ -65,25 +68,9 @@ client = Client(cfg)
 imagesInfo = ImagesInfo(cfg)
 
 
-# In[ ]:
+# In[5]:
 
 
-if False:
-    with open(file_name, 'rb') as file_t:
-        blob_data = bytearray(file_t.read())
-        send_json_dict = {}
-        send_json_dict['data_type'] = 'file'
-        send_json_dict['file_name'] = file_name
-        send_json_dict['data_size'] = (len(blob_data))
-        # send_json_dict['data_buffer'] = blob_data
-        app_json = json.dumps(send_json_dict)
-        print(str(app_json))
-
-        t0= time.perf_counter()
-        client.send_data(str(app_json), blob_data)
-        t1 = time.perf_counter() - t0
-
-        print("Time to send file: %.3f" % (t1))
 def evaluate_file_over_server(file_name):
     with open(file_name, 'rb') as file_t:
         byte_buffer_to_send = bytearray(file_t.read())
@@ -113,21 +100,24 @@ def evaluate_file_over_server(file_name):
         return pred_caption, [], []
 
 
-# In[ ]:
+# In[6]:
 
 
 # tf.compat.v1.disable_eager_execution()
 
 
-# In[ ]:
+# In[7]:
 
 
-def evaluate_over_server(file_name):
+def evaluate_over_server(file_name, zlib_compression=False):
     image_tensor,caption = Util.read_image(file_name,'')
 
     image_np_array = image_tensor.numpy()
 
     byte_buffer_to_send = image_np_array.tobytes()
+    if(zlib_compression == True):
+        byte_buffer_to_send = zlib.compress(byte_buffer_to_send)
+
     type(byte_buffer_to_send)
 
     send_json_dict = {}
@@ -135,6 +125,10 @@ def evaluate_over_server(file_name):
     send_json_dict['file_name'] = file_name
     send_json_dict['data_size'] = (len(byte_buffer_to_send))
     send_json_dict['data_shape'] = image_np_array.shape
+    if(zlib_compression == True):
+        send_json_dict['zlib_compression'] = 'yes'
+    else:
+        send_json_dict['zlib_compression'] = 'no'
 
     app_json = json.dumps(send_json_dict)
 
@@ -155,7 +149,7 @@ def evaluate_over_server(file_name):
     return pred_caption, [], []
 
 
-# In[ ]:
+# In[8]:
 
 
 
@@ -177,6 +171,8 @@ for i in range(max_test_images):
         pred_caption, attention_plot,pred_test = evaluate_file_over_server(img_path)
     if(test_number == 2):
         pred_caption, attention_plot,pred_test = evaluate_over_server(img_path)
+    if(test_number == 3):
+        pred_caption, attention_plot,pred_test = evaluate_over_server(img_path,zlib_compression=True)
 
     tk.logTime(img_path, tk.E_STOP_CLIENT_PROCESSING)
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 #!/usr/bin/env python3
 
 
-# In[ ]:
+# In[2]:
 
 
 import os
@@ -19,8 +19,10 @@ from   tensorflow.keras.preprocessing.text import Tokenizer
 from   tensorflow.keras.activations import tanh
 from   tensorflow.keras.activations import softmax
 from   numpy import float32
+from   numpy import byte
 import json
 import time
+import zlib
 
 from Config import Config
 import Logger
@@ -28,7 +30,7 @@ from Communication import Server
 import Util
 
 
-# In[ ]:
+# In[3]:
 
 
 class Encoder(Model):
@@ -43,7 +45,7 @@ class Encoder(Model):
         return features    
 
 
-# In[ ]:
+# In[4]:
 
 
 class Attention_model(Model):
@@ -79,7 +81,7 @@ class Attention_model(Model):
         return context_vector, attention_weights   
 
 
-# In[ ]:
+# In[5]:
 
 
 class Decoder(Model):
@@ -121,7 +123,7 @@ class Decoder(Model):
         return tf.zeros((batch_size, self.units))
 
 
-# In[ ]:
+# In[6]:
 
 
 class TailModel:
@@ -215,6 +217,7 @@ class TailModel:
 
     def process_image_tensor(self,msg,shape):
         generated_np_array = np.frombuffer(msg, dtype=float32)
+        generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
         generated_image_np_array = generated_np_array.reshape(shape)
         image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
 
@@ -238,7 +241,7 @@ class TailModel:
         return features
 
 
-# In[8]:
+# In[7]:
 
 
 cfg = Config(None)
