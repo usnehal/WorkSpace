@@ -1,5 +1,6 @@
 
 import  socket
+import pandas as pd
 
 class Config():
     def __init__(self, server_ip):
@@ -8,7 +9,7 @@ class Config():
         self.HOST_WSL = 2
         self.HOST_PI = 3
 
-        self.total_test_images = 128
+        self.total_test_images = 100
         self.max_tokenized_words = 20000
         self.MAX_SEQ_LENGTH = 25
         self.batch_size = 32
@@ -40,7 +41,13 @@ class Config():
 
         self.text_file = self.workspace_path + '/lists/captions_' + str(self.total_test_images) + '.txt'
         self.list_file = self.workspace_path + '/lists/images_' + str(self.total_test_images) + '.txt'
+        self.df_captions_csv = self.workspace_path + '/lists/df_captions_' + str(self.total_test_images) + '.csv'
+        self.df_instances_csv = self.workspace_path + '/lists/df_instances_' + str(self.total_test_images) + '.csv'
+        self.df_categories_csv = self.workspace_path + '/lists/df_categories.csv'
 
+        self.df_captions = pd.read_csv(self.df_captions_csv)
+        self.df_instances = pd.read_csv(self.df_instances_csv)
+        self.df_categories = pd.read_csv(self.df_categories_csv)
 
     def __getitem__(self):
 
