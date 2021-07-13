@@ -83,6 +83,12 @@ communication/saved_model
 image_at_epoch_*
 communication/image_at_epoch_*
 temp_model
+exp/logs
+temp
+exp/temp
+logs
+exp/checkpoints
+checkpoints
 
 # IPython
 profile_default/
