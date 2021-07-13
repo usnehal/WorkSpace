@@ -54,7 +54,7 @@ if(verbose == None):
 if(test_number == None):
     test_number = 3
 
-test_scenarios = {1:"Complete jpg file buffer transfer", 
+test_scenarios = {  1:"Complete jpg file buffer transfer", 
                     2:"Decoded image buffer transfer",
                     3:"Decoded image buffer transfer with zlib compression"}
 
@@ -82,8 +82,11 @@ imagesInfo = ImagesInfo(cfg)
 # In[6]:
 
 
-new_head_model = tf.keras.models.load_model(cfg.temp_path + '/new_head_model')
-new_tail_model = tf.keras.models.load_model(cfg.temp_path + '/new_tail_model')
+# new_head_model = tf.keras.models.load_model(cfg.temp_path + '/new_head_model')
+# new_tail_model = tf.keras.models.load_model(cfg.temp_path + '/new_tail_model')
+
+new_head_model = tf.keras.models.load_model(cfg.saved_model_path + '/new_head_model')
+new_tail_model = tf.keras.models.load_model(cfg.saved_model_path + '/new_tail_model')
 
 
 # In[7]:
@@ -184,16 +187,18 @@ for i in tqdm(range(max_test_images)):
 df.to_csv(cfg.temp_path + '/results_'+cfg.timestr+'.csv')
 av_column = df.mean(axis=0)
 
-
-# In[10]:
-
-
 Logger.milestone_print("accuracy        : %.2f" % (av_column.accuracy))
 Logger.milestone_print("top_1_accuracy  : %.2f" % (av_column.top_1_accuracy))
 Logger.milestone_print("top_5_accuracy  : %.2f" % (av_column.top_5_accuracy))
 Logger.milestone_print("precision       : %.2f" % (av_column.precision))
 Logger.milestone_print("recall          : %.2f" % (av_column.recall))
 Logger.milestone_print("time            : %.2f" % (av_column.time))
+
+
+# In[10]:
+
+
+
 
 
 # In[ ]:
