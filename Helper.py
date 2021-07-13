@@ -14,6 +14,7 @@ import json
 import numpy as np
 import tensorflow as tf
 import zlib
+from    sklearn.metrics import accuracy_score
 
 import  socket
 
@@ -35,7 +36,7 @@ class Config():
         else:
             self.server_ip = 'localhost'
         # self.server_ip = '35.200.232.85'
-        self.server_port = 5000
+        self.server_port = 5001
 
         host = socket.gethostname()
         self.workspace_path = '/home/suphale/WorkSpace' 
@@ -88,7 +89,7 @@ debug_level = 0
 class Logger:
     def __init__(self):
         debugLogs = False
-        debug_level = 0
+        debug_level = 1
     def set_log_level(level):
         global debug_level
         debug_level = level
@@ -178,7 +179,7 @@ def extract_jpg_caption(images_path, line):
 
 class TimeKeeper:
     def __init__(self):
-        self.pretty_df = pd.DataFrame(columns=['Image','BLEU','Total_Time','Comm_Time'])
+        self.pretty_df = pd.DataFrame(columns=['Image','Total_Time','Comm_Time'])
 
         self.E_START_CLIENT_PROCESSING = 'E_START_CLIENT_PROCESSING'
         self.E_STOP_CLIENT_PROCESSING = 'E_STOP_CLIENT_PROCESSING'
@@ -186,7 +187,6 @@ class TimeKeeper:
         self.E_STOP_COMMUNICATION = 'E_STOP_COMMUNICATION'
 
         self.I_BUFFER_SIZE = 'I_BUFFER_SIZE'
-        self.I_BLEU = 'I_BLEU'
         self.I_REAL_CAPTION = 'I_REAL_CAPTION'
         self.I_PRED_CAPTION = 'I_PRED_CAPTION'
         self.I_CLIENT_PROCESSING_TIME = 'I_CLIENT_PROCESSING_TIME'
@@ -213,7 +213,6 @@ class TimeKeeper:
         record = self.records[image]
         pretty_record = {}
         pretty_record['Image'] = image.rsplit('/', 1)[-1]
-        pretty_record['BLEU'] = "{:.02f}".format(self.records[image][self.I_BLEU])
         pretty_record['Total_Time'] = "{:.02f}".format(self.records[image][self.I_CLIENT_PROCESSING_TIME])
         pretty_record['Comm_Time'] = "{:.02f}".format(self.records[image][self.I_COMMUNICATION_TIME])
         self.pretty_df = self.pretty_df.append(pretty_record,ignore_index=True)
@@ -227,14 +226,12 @@ class TimeKeeper:
         df_t = df.T
         
         # df_t.to_csv("TimeKeeper.csv")
-        average_bleu = df_t[self.I_BLEU].mean()
         average_inference_time = df_t[self.I_CLIENT_PROCESSING_TIME].mean()
         average_head_model_time = df_t[self.I_CLIENT_PROCESSING_TIME].mean() - df_t[self.I_COMMUNICATION_TIME].mean()
         average_communication_time = df_t[self.I_COMMUNICATION_TIME].mean() - df_t[self.I_TAIL_MODEL_TIME].mean()
         average_tail_model_time = df_t[self.I_TAIL_MODEL_TIME].mean()
         average_communication_payload = int(df_t[self.I_BUFFER_SIZE].mean())
 
-        Logger.milestone_print("Average BLEU                    : %.2f" % (average_bleu))
         Logger.milestone_print("Average inference time          : %.2f s" % (average_inference_time))
         Logger.milestone_print("Average head model time         : %.2f s" % (average_head_model_time))
         Logger.milestone_print("Average communication time      : %.2f s" % (average_communication_time))
@@ -412,7 +409,7 @@ class Server:
     def handle_client(self,c,addr):
         # global request_count
         # print(addr)
-        print('%d' % (self.request_count), end ="\r") 
+        # print('%d' % (self.request_count), end ="\r") 
         self.request_count = self.request_count + 1
         Logger.debug_print("handle_client:Entry")
         received_data = c.recv(1024).decode()
@@ -461,4 +458,58 @@ class Server:
         c.send(response.encode())
         # candidate = pred_caption.split()
         Logger.debug_print ('response:' + response)
-        
+
+def get_predictions(cfg, prediction_tensor):
+    n = tf.squeeze(prediction_tensor).numpy()
+    top_predictions = []
+    top_predictions_prob = []
+    index = 0
+    for x in n:
+        if x > cfg.PREDICTIONS_THRESHOLD:
+            top_predictions.append(index)
+            top_predictions_prob.append(int(x*100))
+        index += 1
+    return top_predictions, top_predictions_prob
+
+def process_predictions(cfg, imagesInfo, ground_truth, top_predictions, top_predictions_prob):
+    df = pd.DataFrame(columns=['id_index','probability'])
+    predictions_str = ''
+    predictions_length = len(top_predictions)
+    assert(predictions_length == len(top_predictions_prob))
+    for i in range(predictions_length):
+        x = top_predictions_prob[i]
+        p = top_predictions[i]
+        if x > cfg.PREDICTIONS_THRESHOLD:
+            top_predictions.append(p)
+            predictions_str += "%s(%.2f) " % (imagesInfo.classes[p],x)
+            df = df.append({'id_index':int(p), 'probability':x},ignore_index = True)
+
+    df = df.sort_values('probability', ascending=False)
+    sorted_predictions = df['id_index'].tolist()
+    sorted_predictions = [int(x) for x in sorted_predictions]
+
+    ground_truth_length = len(ground_truth)
+    predictions_length = len(sorted_predictions)
+
+    aligned_predictions = [-1] * ground_truth_length
+    TP = 0
+    for i in range(ground_truth_length):
+        if(ground_truth[i] in sorted_predictions):
+            aligned_predictions[i] = ground_truth[i]
+            TP += 1
+    accuracy = accuracy_score(ground_truth, aligned_predictions)
+
+    top_1_accuracy = 0.0
+    top_5_accuracy = 0.0
+    precision = 0
+    recall = 0
+    if(predictions_length > 0):
+        if(sorted_predictions[0] in ground_truth):
+            top_1_accuracy = 1.0
+        for i in range(5):
+            if((i < predictions_length) and (sorted_predictions[i] in ground_truth)):
+                top_5_accuracy = 1.0
+
+        precision = TP / predictions_length
+    recall = TP / ground_truth_length
+    return accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str

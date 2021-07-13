@@ -22,13 +22,12 @@ import  re
 import sys
 import argparse
 import zlib
+import pickle5 as pickle
+import pandas as pd
+from tqdm import tqdm
 
-from   Config import Config
-import Util
-import Logger
-from   Communication import Client
-from ImagesInfo import ImagesInfo
-from TimeKeeper import TimeKeeper
+from Helper import Config, ImagesInfo, Logger, Client, TimeKeeper
+from Helper import read_image, filt_text, process_predictions
 
 
 # In[3]:
@@ -51,7 +50,7 @@ if(verbose == None):
 if(test_number == None):
     test_number = 3
 
-test_scenarios = {1:"Complete jpg file buffer transfer", 
+test_scenarios = {  1:"Complete jpg file buffer transfer", 
                     2:"Decoded image buffer transfer",
                     3:"Decoded image buffer transfer with zlib compression"}
 
@@ -93,11 +92,13 @@ def evaluate_file_over_server(file_name):
 
         response = json.loads(response)
 
-        pred_caption = response['pred_caption']
+        predictions = response['predictions']
+        predictions_prob = response['predictions_prob']
+        # predictions = pickle.loads(predictions)
         tail_model_time = response['tail_model_time']
         tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, tail_model_time)
 
-        return pred_caption, [], []
+        return predictions, predictions_prob
 
 
 # In[6]:
@@ -110,7 +111,7 @@ def evaluate_file_over_server(file_name):
 
 
 def evaluate_over_server(file_name, zlib_compression=False):
-    image_tensor,caption = Util.read_image(file_name,'')
+    image_tensor = read_image(file_name)
 
     image_np_array = image_tensor.numpy()
 
@@ -142,11 +143,12 @@ def evaluate_over_server(file_name, zlib_compression=False):
 
     response = json.loads(response)
 
-    pred_caption = response['pred_caption']
+    predictions = response['predictions']
+    predictions_prob = response['predictions_prob']
     tail_model_time = response['tail_model_time']
     tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, tail_model_time)
 
-    return pred_caption, [], []
+    return predictions, predictions_prob
 
 
 # In[8]:
@@ -155,44 +157,58 @@ def evaluate_over_server(file_name, zlib_compression=False):
 
 total_time = 0.0
 max_test_images = cfg.total_test_images
-for i in range(max_test_images):
-    Logger.event_print("")
-    random_num = random.randint(0,max_test_images-1)
-    img_path = imagesInfo.getImagePath(random_num)
+df = pd.DataFrame(columns=['img_path','ground_truth', 'top_predict', 'Prediction', 'accuracy', 'top_1_accuracy', 'top_5_accuracy', 'precision', 'recall', 'time'])
+
+for i in tqdm(range(max_test_images)):
+    # Logger.event_print("")
+    img_path = imagesInfo.getImagePath(i)
     # image = io.imread(img_path)
     # plt.imshow(image)
-
-    real_caption = imagesInfo.getCaption(random_num)
+    ground_truth = imagesInfo.get_segmentation_id_indexes(img_path)
 
     tk.startRecord(img_path)
     tk.logTime(img_path, tk.E_START_CLIENT_PROCESSING)
 
     if(test_number == 1):
-        pred_caption, attention_plot,pred_test = evaluate_file_over_server(img_path)
+        predictions,predictions_prob = evaluate_file_over_server(img_path)
     if(test_number == 2):
-        pred_caption, attention_plot,pred_test = evaluate_over_server(img_path)
+        predictions,predictions_prob = evaluate_over_server(img_path)
     if(test_number == 3):
-        pred_caption, attention_plot,pred_test = evaluate_over_server(img_path,zlib_compression=True)
+        predictions,predictions_prob = evaluate_over_server(img_path,zlib_compression=True)
 
     tk.logTime(img_path, tk.E_STOP_CLIENT_PROCESSING)
 
-    real_caption=Util.filt_text(real_caption)      
+    accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str = process_predictions(cfg, imagesInfo, ground_truth,predictions, predictions_prob)
+    df = df.append(
+        {'image':img_path, 
+        'ground_truth':(str(imagesInfo.get_segmentation_texts(ground_truth))),
+        'top_predict':str(top_predictions),
+        'Prediction':predictions_str,
+        'accuracy':accuracy,
+        'top_1_accuracy':top_1_accuracy,
+        'top_5_accuracy':top_5_accuracy,
+        'precision':precision,
+        'recall':recall,
+        'time':0,
+        },
+        ignore_index = True)
+    truth_str = ' '.join([str(elem) for elem in imagesInfo.get_segmentation_texts(ground_truth)])
+    # Logger.debug_print("ground_truth  : %s" % (truth_str))
+    # Logger.debug_print("Prediction    : %s" % (predictions_str))
 
-    reference = imagesInfo.getAllCaptions(img_path)
-    candidate = pred_caption.split()
-
-    score = sentence_bleu(reference, candidate, weights=[1]) #set your weights)
-
-    tk.logInfo(img_path, tk.I_BLEU, score)
-    tk.logInfo(img_path, tk.I_REAL_CAPTION, real_caption)
-    tk.logInfo(img_path, tk.I_PRED_CAPTION, pred_caption)
     tk.finishRecord(img_path)
 
-    Logger.event_print("BLEU: %.2f" % (score))
-    Logger.event_print ('Real: %s' % (real_caption))
-    Logger.event_print ('Pred: %s' % (pred_caption))
+df.to_csv(cfg.temp_path + '/results_'+cfg.timestr+'.csv')
+av_column = df.mean(axis=0)
 
-tk.printAll()
+Logger.milestone_print("accuracy        : %.2f" % (av_column.accuracy))
+Logger.milestone_print("top_1_accuracy  : %.2f" % (av_column.top_1_accuracy))
+Logger.milestone_print("top_5_accuracy  : %.2f" % (av_column.top_5_accuracy))
+Logger.milestone_print("precision       : %.2f" % (av_column.precision))
+Logger.milestone_print("recall          : %.2f" % (av_column.recall))
+Logger.milestone_print("time            : %.2f" % (av_column.time))
+
+# tk.printAll()
 tk.summary()
 
 

@@ -11,4 +11,6 @@ jupyter nbconvert train.ipynb --to python
 
 chmod 777 Server.py
 chmod 777 Client.py
+chmod 777 inference.py
+chmod 777 train.py
 

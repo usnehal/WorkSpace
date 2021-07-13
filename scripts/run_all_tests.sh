@@ -8,7 +8,7 @@ else
   IP=$1
 fi
 
-cd ~/WorkSpace/communication        
+cd ~/WorkSpace/       
 if [ -z "$IP" ]
 then
 python3 ./Client.py -t 1 -v 0       
