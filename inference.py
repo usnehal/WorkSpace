@@ -168,7 +168,9 @@ def evaluate_classification(image):
 
 data_dir='/home/suphale/coco'
 N_LABELS = 80
+# split_val = "validation"
 split_val = "validation[:20%]"
+# split_val = "validation[:1%]"
 # h_image_height = 299
 # h_image_width = 299
 
@@ -245,10 +247,10 @@ total_time = 0.0
 count = 0
 max_test_images = max_tests
 # for sample_img_batch, ground_truth in ds_val:
-for i in tqdm(range(max_test_images)):
-# for sample_img_batch, ground_truth in ds_val:
+# for i in tqdm(range(max_test_images)):
+for sample_img_batch, ground_truth in ds_val:
     count += 1
-    sample_img_batch, ground_truth = next(iter(ds_val))
+    # sample_img_batch, ground_truth = next(iter(ds_val))
     tensor_shape = len(ground_truth.get_shape().as_list())
     if(tensor_shape > 1):
         ground_truth = tf.squeeze(ground_truth,[0])
@@ -259,9 +261,10 @@ for i in tqdm(range(max_test_images)):
     t1 = time.perf_counter() - t0
     total_time = total_time + t1
 
+    ground_truth = list(set(ground_truth.numpy()))
     accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str = process_predictions(ground_truth,s)
     df = df.append(
-        {'image':i, 
+        {'image':0, 
         'ground_truth':(str(imagesInfo.get_segmentation_texts(ground_truth))),
         'top_predict':str(top_predictions),
         'Prediction':predictions_str,
