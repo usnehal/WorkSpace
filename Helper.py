@@ -18,6 +18,14 @@ from    sklearn.metrics import accuracy_score
 
 import  socket
 
+class test:
+    STANDALONE = 0
+    JPEG_TRANSFER = 1
+    DECODED_IMAGE_TRANSFER = 2
+    DECODED_IMAGE_TRANSFER_ZLIB = 3
+    SPLIT_LAYER_3 = 4
+    SPLIT_LAYER_3_ZLIB = 5
+
 class Config():
     def __init__(self, server_ip=None):
         self.host = None
@@ -36,7 +44,7 @@ class Config():
         else:
             self.server_ip = 'localhost'
         # self.server_ip = '35.200.232.85'
-        self.server_port = 5000
+        self.server_port = 5002
 
         host = socket.gethostname()
         self.workspace_path = '/home/suphale/WorkSpace' 

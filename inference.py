@@ -46,6 +46,7 @@ parser.add_argument('-v', '--verbose', action='store', type=int, required=False)
 parser.add_argument('-i', '--image_size', action='store', type=int, required=False)
 parser.add_argument('-m', '--max_tests', action='store', type=int, required=False)
 args, unknown = parser.parse_known_args()
+
 print(args.server)
 
 server_ip = args.server
@@ -62,6 +63,11 @@ if(test_number == None):
 
 if(max_tests == None):
     max_tests = 100
+elif (((max_tests % 50) == 0) and (max_tests <= 5000)):
+    max_tests = max_tests
+else:
+    print("max_tests must be multiple of 50 and less than or equal to 5000")
+    exit(1)
 
 test_scenarios = {  1:"Complete jpg file buffer transfer", 
                     2:"Decoded image buffer transfer",
