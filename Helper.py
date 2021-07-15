@@ -36,7 +36,7 @@ class Config():
         else:
             self.server_ip = 'localhost'
         # self.server_ip = '35.200.232.85'
-        self.server_port = 5001
+        self.server_port = 5000
 
         host = socket.gethostname()
         self.workspace_path = '/home/suphale/WorkSpace' 
@@ -333,15 +333,39 @@ class Client:
         self.cfg = cfg
         # self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
+    def connect(self):
+        Logger.debug_print("connect:Entry")
+        self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        Logger.debug_print("connect:Connect")
+        self.s.connect((self.cfg.server_ip,int(self.cfg.server_port)))
+
+    def disconnect(self):
+        Logger.debug_print("disconnect:Entry")
+        self.s.shutdown(socket.SHUT_RDWR)
+        Logger.debug_print("disconnect:Connect")
+        self.s.close()
+
     def reconnect(self):
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.s.connect((self.cfg.server_ip,int(self.cfg.server_port)))
 
+    def send_load_model_request(self,data_info):
+        self.connect()
+        Logger.debug_print("send_data:send data_info")
+        self.s.send(data_info.encode())
+
+        Logger.debug_print("send_data:receive response")
+        confirmation = self.s.recv(1024).decode()
+        Logger.debug_print("send_data:confirmation = "+confirmation)
+        if confirmation == "OK":
+            Logger.debug_print('send_data:Sending data')
+            return "OK"
+        else:
+            print("Received error from server, %s" % (confirmation.decode()))
+            return "Error"
+
     def send_data(self,data_info, data_buffer):
-        Logger.debug_print("send_data:Entry")
-        self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        Logger.debug_print("send_data:Connect")
-        self.s.connect((self.cfg.server_ip,int(self.cfg.server_port)))
+        self.connect()
         Logger.debug_print("send_data:send data_info")
         self.s.send(data_info.encode())
 
@@ -365,8 +389,6 @@ class Client:
         else:
             print("Received error from server, %s" % (confirmation.decode()))
 
-
-
 class Server:
     def __init__(self,cfg,tailModel):
         self.cfg = cfg
@@ -388,8 +410,8 @@ class Server:
         ip = '' 
         port = self.cfg.server_port
 
-        print('Running on IP: '+ip)
-        print('Running on port: '+str(port))
+        Logger.milestone_print('Running on IP: '+ip)
+        Logger.milestone_print('Running on port: '+str(port))
 
         self.s.bind((ip,port))
         self.s.listen(100)
@@ -417,47 +439,56 @@ class Server:
         obj = json.loads(received_data)
         Logger.debug_print(obj)
         data_type = obj['data_type']
-        tensor_shape = obj['data_shape']
-        if 'zlib_compression' in obj.keys():
-            zlib_compression = obj['zlib_compression']
+        if(data_type == 'load_model_request'):
+            model_type = obj['model']
+            response = ''
+            if data_type in self.callbacks :
+                callback = self.callbacks[data_type]
+                response = callback(model_type,None)
+
+            Logger.debug_print("handle_client:sending pred_caption" + response)
+            c.send(response.encode())
+            # candidate = pred_caption.split()
+            Logger.debug_print ('response:' + response)
         else:
-            zlib_compression = False
-        Logger.debug_print("handle_client:sending OK")
-        c.send("OK".encode())
+            tensor_shape = obj['data_shape']
+            if 'zlib_compression' in obj.keys():
+                zlib_compression = obj['zlib_compression']
+            else:
+                zlib_compression = False
+            Logger.debug_print("handle_client:sending OK")
+            c.send("OK".encode())
 
-        max_data_to_be_received = obj['data_size']
-        total_data = 0
-        msg = bytearray()
-        while 1:
-            # print("handle_client:calling recv total_data=%d data_size=%d" % (total_data, max_data_to_be_received))
-            if(total_data >= max_data_to_be_received):
-                Logger.debug_print("handle_client:received all data")
-                break
-            data = c.recv(1024)
-            # print(type(data))
-            msg.extend(data)
-            if not data:
-                Logger.debug_print("handle_client:while break")
-                break
-            total_data += len(data)
-        
-        Logger.debug_print('total size of msg=%d' % (len(msg)))
-        
-        if(zlib_compression == 'yes'):
-            msg = zlib.decompress(msg)
+            max_data_to_be_received = obj['data_size']
+            total_data = 0
+            msg = bytearray()
+            while 1:
+                # print("handle_client:calling recv total_data=%d data_size=%d" % (total_data, max_data_to_be_received))
+                if(total_data >= max_data_to_be_received):
+                    Logger.debug_print("handle_client:received all data")
+                    break
+                data = c.recv(1024)
+                # print(type(data))
+                msg.extend(data)
+                if not data:
+                    Logger.debug_print("handle_client:while break")
+                    break
+                total_data += len(data)
+            
+            Logger.debug_print('total size of msg=%d' % (len(msg)))
+            
+            if(zlib_compression == 'yes'):
+                msg = zlib.decompress(msg)
 
+            response = ''
+            if data_type in self.callbacks :
+                callback = self.callbacks[data_type]
+                response = callback(msg,tensor_shape)
 
-        response = ''
-        if data_type in self.callbacks :
-            callback = self.callbacks[data_type]
-            response = callback(msg,tensor_shape)
-        # result, attention_plot,pred_test  = tailModel.evaluate(generate_image_tensor)
-        # pred_caption=' '.join(result).rsplit(' ', 1)[0]
-
-        Logger.debug_print("handle_client:sending pred_caption" + response)
-        c.send(response.encode())
-        # candidate = pred_caption.split()
-        Logger.debug_print ('response:' + response)
+            Logger.debug_print("handle_client:sending pred_caption" + response)
+            c.send(response.encode())
+            # candidate = pred_caption.split()
+            Logger.debug_print ('response:' + response)
 
 def get_predictions(cfg, prediction_tensor):
     n = tf.squeeze(prediction_tensor).numpy()
