@@ -92,6 +92,7 @@ h_image_width = imagesize
 
 Logger.milestone_print("Test scenario = %d %s" % (test_number, test_scenarios[test_number]))
 Logger.milestone_print("Image shape = (%d %d)" % (h_image_height, h_image_width))
+Logger.milestone_print("Max tests = %d" % (max_tests))
 
 
 # In[6]:
