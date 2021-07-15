@@ -51,7 +51,7 @@ print(args.server)
 server_ip = args.server
 test_number = args.test_number
 verbose = args.verbose
-imagesize = args.imagesize
+image_size = args.image_size
 max_tests = args.max_tests
 
 if(verbose == None):
@@ -67,8 +67,8 @@ test_scenarios = {  1:"Complete jpg file buffer transfer",
                     2:"Decoded image buffer transfer",
                     3:"Decoded image buffer transfer with zlib compression"}
 
-if(imagesize == None):
-    imagesize = 299
+if(image_size == None):
+    image_size = 299
 
 
 # In[ ]:
@@ -87,8 +87,8 @@ imagesInfo = ImagesInfo(cfg)
 total_test_images = 100
 batch_size = 32
 PREDICTIONS_THRESHOLD = 0.4
-h_image_height = imagesize
-h_image_width = imagesize
+h_image_height = image_size
+h_image_width = image_size
 
 Logger.milestone_print("Test scenario = %d %s" % (test_number, test_scenarios[test_number]))
 Logger.milestone_print("Image shape = (%d %d)" % (h_image_height, h_image_width))
