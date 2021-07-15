@@ -89,6 +89,7 @@ logs
 exp/checkpoints
 checkpoints
 saved_model/model
+temp/
 
 # IPython
 profile_default/
