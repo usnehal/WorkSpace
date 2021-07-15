@@ -43,7 +43,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--server', action='store', type=str, required=False)
 parser.add_argument('-t', '--test_number', action='store', type=int, required=False)
 parser.add_argument('-v', '--verbose', action='store', type=int, required=False)
-parser.add_argument('-i', '--imagesize', action='store', type=int, required=False)
+parser.add_argument('-i', '--image_size', action='store', type=int, required=False)
+parser.add_argument('-m', '--max_tests', action='store', type=int, required=False)
 args, unknown = parser.parse_known_args()
 print(args.server)
 
@@ -51,12 +52,16 @@ server_ip = args.server
 test_number = args.test_number
 verbose = args.verbose
 imagesize = args.imagesize
+max_tests = args.max_tests
 
 if(verbose == None):
     verbose = 1
 
 if(test_number == None):
     test_number = 3
+
+if(max_tests == None):
+    max_tests = 100
 
 test_scenarios = {  1:"Complete jpg file buffer transfer", 
                     2:"Decoded image buffer transfer",
@@ -237,7 +242,7 @@ df = pd.DataFrame(columns=['img_path','ground_truth', 'top_predict', 'Prediction
 total_time = 0.0
 # for test_index in range(10):
 count = 0
-max_test_images = 5000
+max_test_images = max_tests
 # for sample_img_batch, ground_truth in ds_val:
 for i in tqdm(range(max_test_images)):
 # for sample_img_batch, ground_truth in ds_val:
