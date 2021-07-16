@@ -550,5 +550,6 @@ def process_predictions(cfg, imagesInfo, ground_truth, top_predictions, top_pred
                 top_5_accuracy = 1.0
 
         precision = TP / predictions_length
-    recall = TP / ground_truth_length
+    if(ground_truth_length > 0):
+        recall = TP / ground_truth_length
     return accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str
