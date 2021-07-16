@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 #!/usr/bin/env python3
 
 
-# In[ ]:
+# In[2]:
 
 
 import os
@@ -25,11 +25,16 @@ import time
 import zlib
 import pickle5 as pickle
 
-from Helper import Config, ImagesInfo, Logger, Client, TimeKeeper, Server
-from Helper import read_image, filt_text, get_predictions
+from common.config import Config
+from common.logger import Logger
+from common.communication import Client
+from common.communication import Server
+from common.helper import ImagesInfo 
+from common.timekeeper import TimeKeeper
+from common.helper import read_image, filt_text, get_predictions
 
 
-# In[ ]:
+# In[3]:
 
 
 class TailModel:
@@ -41,13 +46,13 @@ class TailModel:
         result = self.model(image)
         return result
 
-    def load_model(self,msg,shape):
+    def handle_load_model(self,msg,shape):
         Logger.milestone_print("Loading model : %s" % (cfg.saved_model_path + msg))
         self.model = None
         self.model = tf.keras.models.load_model(cfg.saved_model_path + msg)
         return "OK"
 
-    def process_image_file(self,msg,shape):
+    def handle_image_file(self,msg,shape):
         temp_file = '/tmp/temp.bin'
         f = open(temp_file, "wb")
         f.write(msg)
@@ -70,7 +75,7 @@ class TailModel:
 
         return str(app_json)
 
-    def process_image_tensor(self,msg,shape):
+    def handle_image_tensor(self,msg,shape):
         generated_np_array = np.frombuffer(msg, dtype=float32)
         generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
         generated_image_np_array = generated_np_array.reshape(shape)
@@ -98,25 +103,26 @@ class TailModel:
         return features
 
 
-# In[ ]:
+# In[4]:
 
 
 Logger.set_log_level(1)
+# logger = Logger()
 tk = TimeKeeper()
 cfg = Config(None)
 client = Client(cfg)
 imagesInfo = ImagesInfo(cfg)
 
 
-# In[ ]:
+# In[5]:
 
 
 cfg = Config(None)
 tailModel = TailModel(cfg)
 server = Server(cfg, tailModel)
-server.register_callback('data',tailModel.process_image_tensor)
-server.register_callback('file',tailModel.process_image_file)
-server.register_callback('load_model_request',tailModel.load_model)
+server.register_callback('data',tailModel.handle_image_tensor)
+server.register_callback('file',tailModel.handle_image_file)
+server.register_callback('load_model_request',tailModel.handle_load_model)
 server.accept_connections()
 
 

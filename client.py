@@ -28,8 +28,14 @@ from tqdm import tqdm
 import  tensorflow_datasets as tfds
 import  functools
 
-from Helper import Config, ImagesInfo, Logger, Client, TimeKeeper
-from Helper import read_image, filt_text, test, get_predictions, process_predictions
+from common.constants import test
+from common.config import Config
+from common.logger import Logger
+from common.communication import Client
+from common.communication import Server
+from common.helper import ImagesInfo 
+from common.timekeeper import TimeKeeper
+from common.helper import read_image, filt_text, get_predictions,process_predictions
 
 
 # In[3]:
@@ -53,7 +59,7 @@ max_tests = args.max_tests
 if(verbose == None):
     verbose = 1
 
-test_number = 0
+# test_number = 5
 if(test_number == None):
     test_number = test.STANDALONE
 if(test_number == 0):
@@ -177,7 +183,62 @@ def expand_dims_for_single_batch(image, ground_truths, img_path):
     return image, ground_truths, img_path
 
 
+# In[ ]:
+
+
+
+
+
 # In[8]:
+
+
+# tf.compat.v1.disable_eager_execution()
+
+
+# In[9]:
+
+
+if(test_number in [test.STANDALONE]):
+    model = tf.keras.models.load_model(cfg.saved_model_path + '/model')
+if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED_IMAGE_TRANSFER_ZLIB]):
+    # head_model = tf.keras.models.load_model(cfg.saved_model_path + '/model')
+    send_json_dict = {}
+    send_json_dict['data_type'] = 'load_model_request'
+    send_json_dict['model'] = '/model'
+    app_json = json.dumps(send_json_dict)
+    response = client.send_load_model_request(str(app_json))
+    assert(response == 'OK')
+if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
+    head_model = tf.keras.models.load_model(cfg.saved_model_path + '/head_model')
+    send_json_dict = {}
+    send_json_dict['data_type'] = 'load_model_request'
+    send_json_dict['model'] = '/tail_model'
+    app_json = json.dumps(send_json_dict)
+    response = client.send_load_model_request(str(app_json))
+    assert(response == 'OK')
+
+
+# In[10]:
+
+
+def evaluate_standalone(sample_img_batch, img_path):
+    # print(ground_truth)
+    result = model(sample_img_batch)
+
+    tk.logInfo(img_path, tk.I_BUFFER_SIZE, 0)
+
+    tk.logTime(img_path, tk.E_START_COMMUNICATION)
+
+    tk.logTime(img_path, tk.E_STOP_COMMUNICATION)
+
+    predictions, predictions_prob = get_predictions(cfg, result)
+
+    tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, 0)
+
+    return predictions, predictions_prob
+
+
+# In[11]:
 
 
 def evaluate_file_over_server(file_name):
@@ -209,55 +270,6 @@ def evaluate_file_over_server(file_name):
         tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, tail_model_time)
 
         return predictions, predictions_prob
-
-
-# In[9]:
-
-
-# tf.compat.v1.disable_eager_execution()
-
-
-# In[10]:
-
-
-if(test_number in [test.STANDALONE]):
-    model = tf.keras.models.load_model(cfg.saved_model_path + '/model')
-if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED_IMAGE_TRANSFER_ZLIB]):
-    # head_model = tf.keras.models.load_model(cfg.saved_model_path + '/model')
-    send_json_dict = {}
-    send_json_dict['data_type'] = 'load_model_request'
-    send_json_dict['model'] = '/model'
-    app_json = json.dumps(send_json_dict)
-    response = client.send_load_model_request(str(app_json))
-    assert(response == 'OK')
-if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
-    head_model = tf.keras.models.load_model(cfg.saved_model_path + '/head_model')
-    send_json_dict = {}
-    send_json_dict['data_type'] = 'load_model_request'
-    send_json_dict['model'] = '/tail_model'
-    app_json = json.dumps(send_json_dict)
-    response = client.send_load_model_request(str(app_json))
-    assert(response == 'OK')
-
-
-# In[11]:
-
-
-def evaluate_standalone(sample_img_batch, img_path):
-    # print(ground_truth)
-    result = model(sample_img_batch)
-
-    tk.logInfo(img_path, tk.I_BUFFER_SIZE, 0)
-
-    tk.logTime(img_path, tk.E_START_COMMUNICATION)
-
-    tk.logTime(img_path, tk.E_STOP_COMMUNICATION)
-
-    predictions, predictions_prob = get_predictions(cfg, result)
-
-    tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, 0)
-
-    return predictions, predictions_prob
 
 
 # In[12]:
@@ -423,17 +435,7 @@ def evaluate_classification(image):
 ds_val, ds_info = tfds.load(name="coco/2017", split=split_val, data_dir=data_dir, shuffle_files=False, download=False, with_info=True)
 ds_val = ds_val.map(functools.partial(my_preprocess), num_parallel_calls=tf.data.experimental.AUTOTUNE)
 ds_val = ds_val.map(expand_dims_for_single_batch, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-# ds_val = ds_val.range(100)
-
-# iterator = ds_val.make_one_shot_iterator()
-
 ds_val = ds_val.prefetch(tf.data.experimental.AUTOTUNE)
-
-
-# In[ ]:
-
-
-
 
 
 # In[17]:
@@ -519,7 +521,7 @@ tk.summary()
 # In[18]:
 
 
-ds_info
+# ds_info
 
 
 # In[ ]:
