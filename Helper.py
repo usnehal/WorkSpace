@@ -118,8 +118,8 @@ class Logger:
     def milestone_print(str):
         if(debug_level >= 0):
             print(bcolors.OKGREEN + str + bcolors.ENDC)
-            file1 = open(cfg.temp_path + "log.txt", "a")  # append mode
-            file1.write(str)
+            file1 = open(cfg.temp_path + "/log.txt", "a")  # append mode
+            file1.write(str + "\n")
             file1.close()
 
 # def read_image(image_path,label):

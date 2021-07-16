@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 #!/usr/bin/env python3
 
 
-# In[ ]:
+# In[2]:
 
 
 import socket
@@ -32,7 +32,7 @@ from Helper import Config, ImagesInfo, Logger, Client, TimeKeeper
 from Helper import read_image, filt_text, test, get_predictions, process_predictions
 
 
-# In[ ]:
+# In[3]:
 
 
 parser = argparse.ArgumentParser()
@@ -92,13 +92,13 @@ else:
 print("Test scenario = %d %s" % (test_number, test_scenarios[test_number]))
 
 
-# In[ ]:
+# In[4]:
 
 
 # tf.compat.v1.disable_eager_execution()
 
 
-# In[ ]:
+# In[5]:
 
 
 Logger.set_log_level(verbose)
@@ -108,7 +108,7 @@ client = Client(cfg)
 imagesInfo = ImagesInfo(cfg)
 
 
-# In[ ]:
+# In[6]:
 
 
 data_dir='/home/suphale/coco'
@@ -127,7 +127,7 @@ Logger.event_print("Image shape     : (%d %d)" % (h_image_height, h_image_width)
 Logger.event_print("Max tests       : %d" % (max_tests))
 
 
-# In[ ]:
+# In[7]:
 
 
 class BoxField:
@@ -177,7 +177,7 @@ def expand_dims_for_single_batch(image, ground_truths, img_path):
     return image, ground_truths, img_path
 
 
-# In[ ]:
+# In[8]:
 
 
 def evaluate_file_over_server(file_name):
@@ -211,13 +211,13 @@ def evaluate_file_over_server(file_name):
         return predictions, predictions_prob
 
 
-# In[ ]:
+# In[9]:
 
 
 # tf.compat.v1.disable_eager_execution()
 
 
-# In[ ]:
+# In[10]:
 
 
 if(test_number in [test.STANDALONE]):
@@ -240,7 +240,7 @@ if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
     assert(response == 'OK')
 
 
-# In[ ]:
+# In[11]:
 
 
 def evaluate_standalone(sample_img_batch, img_path):
@@ -260,7 +260,7 @@ def evaluate_standalone(sample_img_batch, img_path):
     return predictions, predictions_prob
 
 
-# In[ ]:
+# In[12]:
 
 
 def evaluate_over_server(image_tensor,file_name, zlib_compression=False):
@@ -311,7 +311,7 @@ def evaluate_over_server(image_tensor,file_name, zlib_compression=False):
 
 
 
-# In[ ]:
+# In[13]:
 
 
 def evaluate_over_server_head_model(image_tensor,file_name, zlib_compression=False):
@@ -356,7 +356,7 @@ def evaluate_over_server_head_model(image_tensor,file_name, zlib_compression=Fal
     return predictions, predictions_prob
 
 
-# In[ ]:
+# In[14]:
 
 
 def process_pred(ground_truth, prediction_tensor):
@@ -407,7 +407,7 @@ def process_pred(ground_truth, prediction_tensor):
     return accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str
 
 
-# In[ ]:
+# In[15]:
 
 
 def evaluate_classification(image):
@@ -417,7 +417,7 @@ def evaluate_classification(image):
     return s
 
 
-# In[ ]:
+# In[16]:
 
 
 ds_val, ds_info = tfds.load(name="coco/2017", split=split_val, data_dir=data_dir, shuffle_files=False, download=False, with_info=True)
@@ -436,7 +436,7 @@ ds_val = ds_val.prefetch(tf.data.experimental.AUTOTUNE)
 
 
 
-# In[ ]:
+# In[17]:
 
 
 count = 0
@@ -501,6 +501,7 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
 df.to_csv(cfg.temp_path + '/results_'+cfg.timestr+'.csv')
 av_column = df.mean(axis=0)
 
+Logger.milestone_print("----------------:")
 Logger.milestone_print("Test scenario   : %d %s" % (test_number, test_scenarios[test_number]))
 Logger.milestone_print("Image shape     : (%d %d)" % (h_image_height, h_image_width))
 Logger.milestone_print("Max tests       : %d" % (max_tests))
@@ -515,7 +516,7 @@ Logger.milestone_print("time            : %.2f" % (av_column.time))
 tk.summary()
 
 
-# In[ ]:
+# In[18]:
 
 
 ds_info
