@@ -4,8 +4,8 @@ set -e
 
 cd /home/suphale/WorkSpace
 
-jupyter nbconvert Server.ipynb --to python
-jupyter nbconvert Client.ipynb --to python
+jupyter nbconvert server.ipynb --to python
+jupyter nbconvert client.ipynb --to python
 jupyter nbconvert inference.ipynb --to python
 jupyter nbconvert train.ipynb --to python
 

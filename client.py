@@ -501,6 +501,9 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
 df.to_csv(cfg.temp_path + '/results_'+cfg.timestr+'.csv')
 av_column = df.mean(axis=0)
 
+Logger.milestone_print("Test scenario   : %d %s" % (test_number, test_scenarios[test_number]))
+Logger.milestone_print("Image shape     : (%d %d)" % (h_image_height, h_image_width))
+Logger.milestone_print("Max tests       : %d" % (max_tests))
 Logger.milestone_print("accuracy        : %.2f" % (av_column.accuracy))
 Logger.milestone_print("top_1_accuracy  : %.2f" % (av_column.top_1_accuracy))
 Logger.milestone_print("top_5_accuracy  : %.2f" % (av_column.top_5_accuracy))

@@ -239,12 +239,11 @@ class TimeKeeper:
         average_communication_time = df_t[self.I_COMMUNICATION_TIME].mean() - df_t[self.I_TAIL_MODEL_TIME].mean()
         average_tail_model_time = df_t[self.I_TAIL_MODEL_TIME].mean()
         average_communication_payload = int(df_t[self.I_BUFFER_SIZE].mean())
-
-        Logger.milestone_print("Average inference time          : %.2f s" % (average_inference_time))
-        Logger.milestone_print("Average head model time         : %.2f s" % (average_head_model_time))
-        Logger.milestone_print("Average communication time      : %.2f s" % (average_communication_time))
-        Logger.milestone_print("Average tail model time         : %.2f s" % (average_tail_model_time))
-        Logger.milestone_print("Average communication payload   : " + f"{int(average_communication_payload):,d}")
+        Logger.milestone_print("Avg total time  : %.2f s" % (average_inference_time))
+        Logger.milestone_print("Avg head time   : %.2f s" % (average_head_model_time))
+        Logger.milestone_print("Avg network time: %.2f s" % (average_communication_time))
+        Logger.milestone_print("Avg tail time   : %.2f s" % (average_tail_model_time))
+        Logger.milestone_print("Avg nw payload  : " + f"{int(average_communication_payload):,d}")
 
 class ImagesInfo:
     def __init__(self, cfg):
