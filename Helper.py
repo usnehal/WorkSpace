@@ -82,6 +82,8 @@ class Config():
     def __len__(self):
         return len(self.x)
 
+cfg = Config()
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -116,6 +118,9 @@ class Logger:
     def milestone_print(str):
         if(debug_level >= 0):
             print(bcolors.OKGREEN + str + bcolors.ENDC)
+            file1 = open(cfg.temp_path + "log.txt", "a")  # append mode
+            file1.write(str)
+            file1.close()
 
 # def read_image(image_path,label):
 #     image = tf.io.read_file(image_path)
