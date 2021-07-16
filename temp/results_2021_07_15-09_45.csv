@@ -1,2 +1,0 @@
-,img_path,ground_truth,top_predict,Prediction,accuracy,top_1_accuracy,top_5_accuracy,precision,recall,time,image
-0,,"['person', 'frisbee']",[0],person(1.00) ,0.5,1.0,1.0,1.0,0.5,0.810571400000299,/home/suphale/WorkSpace/test_images/000000117121.jpg
