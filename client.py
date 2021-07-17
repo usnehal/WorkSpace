@@ -60,7 +60,7 @@ max_tests = args.max_tests
 if(verbose == None):
     verbose = 1
 
-# test_number = 4
+test_number = 0
 if(test_number == None):
     test_number = test.STANDALONE
 if(test_number == 0):
@@ -242,6 +242,7 @@ if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
 # In[11]:
 
 
+# @tf.function
 def handle_test_STANDALONE(sample_img_batch, img_path):
     # print(ground_truth)
     features, result = model(sample_img_batch)
@@ -423,9 +424,12 @@ max_test_images = max_tests
 # coco_image_dir = '/home/suphale/snehal_bucket/coco/raw-data/val2017/'
 
 total_time = 0.0
+
+total_time = 0.0
 df = pd.DataFrame(columns=['img_path','ground_truth', 'top_predict', 'Prediction', 'accuracy', 'top_1_accuracy', 'top_5_accuracy', 'precision', 'recall', 'time'])
 ds_val = ds_val.take(max_tests)
 for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
+# for sample_img_batch, ground_truth, img_path in ds_val:
     count += 1
     img_path = img_path.numpy().decode()
 
@@ -498,15 +502,22 @@ Logger.milestone_print("time            : %.2f" % (av_column.time))
 
 # tk.printAll()
 tk.summary()
+    
 
 
-# In[18]:
+# In[ ]:
+
+
+
+
+
+# In[ ]:
 
 
 # ds_info
 
 
-# In[19]:
+# In[ ]:
 
 
 Test = False
@@ -538,13 +549,13 @@ if (Test == True):
         print ('Pred:', pred_caption)    
 
 
-# In[20]:
+# In[ ]:
 
 
 # imagesInfo.annotations_dict
 
 
-# In[21]:
+# In[ ]:
 
 
 # model.save(cfg.temp_path + '/extractor_model')

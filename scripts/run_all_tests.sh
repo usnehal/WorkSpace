@@ -10,7 +10,7 @@ else
   SERVER=" -s $IP"
 fi
 
-TESTS=" -m 1000"
+TESTS=" -m 100"
 VERBOSE=" -v 0"
 
 cd ~/WorkSpace/       
