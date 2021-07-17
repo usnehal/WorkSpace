@@ -1,5 +1,5 @@
 import  pandas as pd
-# import  numpy as np
+import  numpy as np
 import  tensorflow as tf
 from    tensorflow.keras import layers,Model
 from    tqdm import tqdm
@@ -158,7 +158,7 @@ class CaptionModel(Model):
 
     def evaluate(self, features):
         attention_features_shape = 64
-        attention_plot = tf.zeros((self.MAX_SEQ_LENGTH, attention_features_shape))
+        attention_plot = np.zeros((self.MAX_SEQ_LENGTH, attention_features_shape))
 
         hidden = self.decoder.init_state(batch_size=1)
 
@@ -169,9 +169,6 @@ class CaptionModel(Model):
 
         for i in range(self.MAX_SEQ_LENGTH):
             # get the output from decoder
-            tf.print(type(dec_input))
-            tf.print(type(features))
-            tf.print(type(hidden))
             predictions, hidden, attention_weights = self.decoder(dec_input, features, hidden)
 
             attention_plot[i] = tf.reshape(attention_weights, (-1, )).numpy()
