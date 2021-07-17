@@ -36,6 +36,7 @@ from common.communication import Server
 from common.helper import ImagesInfo 
 from common.timekeeper import TimeKeeper
 from common.helper import read_image, filt_text, get_predictions,process_predictions
+from CaptionModel import CaptionModel
 
 
 # In[3]:
@@ -59,7 +60,7 @@ max_tests = args.max_tests
 if(verbose == None):
     verbose = 1
 
-# test_number = 5
+# test_number = 4
 if(test_number == None):
     test_number = test.STANDALONE
 if(test_number == 0):
@@ -88,7 +89,7 @@ if(image_size == None):
     image_size = 299
 
 if(max_tests == None):
-    max_tests = 100
+    max_tests = 50
 elif (((max_tests % 50) == 0) and (max_tests <= 5000)):
     max_tests = max_tests
 else:
@@ -117,6 +118,12 @@ imagesInfo = ImagesInfo(cfg)
 # In[6]:
 
 
+from CaptionModel import CaptionModel
+
+
+# In[7]:
+
+
 data_dir='/home/suphale/coco'
 N_LABELS = 80
 # split_val = "validation"
@@ -133,7 +140,7 @@ Logger.event_print("Image shape     : (%d %d)" % (h_image_height, h_image_width)
 Logger.event_print("Max tests       : %d" % (max_tests))
 
 
-# In[7]:
+# In[8]:
 
 
 class BoxField:
@@ -183,47 +190,64 @@ def expand_dims_for_single_batch(image, ground_truths, img_path):
     return image, ground_truths, img_path
 
 
-# In[ ]:
-
-
-
-
-
-# In[8]:
+# In[9]:
 
 
 # tf.compat.v1.disable_eager_execution()
 
 
-# In[9]:
+# In[10]:
 
 
 if(test_number in [test.STANDALONE]):
     model = tf.keras.models.load_model(cfg.saved_model_path + '/model')
+    model = tf.keras.Model(inputs=model.inputs,outputs=[ 
+                                model.layers[310].output, 
+                                model.layers[313].output])    
+    captionModel = CaptionModel()
 if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED_IMAGE_TRANSFER_ZLIB]):
     # head_model = tf.keras.models.load_model(cfg.saved_model_path + '/model')
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
-    send_json_dict['model'] = '/model'
+    send_json_dict['model'] = 'model'
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
+
+    send_json_dict = {}
+    send_json_dict['data_type'] = 'load_model_request'
+    send_json_dict['model'] = 'captionModel'
+    app_json = json.dumps(send_json_dict)
+    response = client.send_load_model_request(str(app_json))
+    assert(response == 'OK')
+
+
 if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
     head_model = tf.keras.models.load_model(cfg.saved_model_path + '/head_model')
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
-    send_json_dict['model'] = '/tail_model'
+    send_json_dict['model'] = 'tail_model'
+    app_json = json.dumps(send_json_dict)
+    response = client.send_load_model_request(str(app_json))
+    assert(response == 'OK')
+
+    send_json_dict = {}
+    send_json_dict['data_type'] = 'load_model_request'
+    send_json_dict['model'] = 'captionModel'
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
 
 
-# In[10]:
+# In[11]:
 
 
-def evaluate_standalone(sample_img_batch, img_path):
+def handle_test_STANDALONE(sample_img_batch, img_path):
     # print(ground_truth)
-    result = model(sample_img_batch)
+    features, result = model(sample_img_batch)
+
+    features = tf.reshape(features, [sample_img_batch.shape[0],8*8, 2048])
+    caption_tensor = captionModel.evaluate(features)
 
     tk.logInfo(img_path, tk.I_BUFFER_SIZE, 0)
 
@@ -235,14 +259,14 @@ def evaluate_standalone(sample_img_batch, img_path):
 
     tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, 0)
 
-    return predictions, predictions_prob
+    return predictions, predictions_prob, caption_tensor
 
 
-# In[11]:
+# In[12]:
 
 
-def evaluate_file_over_server(file_name):
-    with open(file_name, 'rb') as file_t:
+def handle_test_JPEG_TRANSFER(file_name):
+    with open('/home/suphale/snehal_bucket/coco/raw-data/val2017/'+ file_name, 'rb') as file_t:
         byte_buffer_to_send = bytearray(file_t.read())
         send_json_dict = {}
         send_json_dict['data_type'] = 'file'
@@ -265,17 +289,18 @@ def evaluate_file_over_server(file_name):
 
         predictions = response['predictions']
         predictions_prob = response['predictions_prob']
+        caption_tensor = response['predicted_captions']
         # predictions = pickle.loads(predictions)
         tail_model_time = response['tail_model_time']
         tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, tail_model_time)
 
-        return predictions, predictions_prob
+        return predictions, predictions_prob, caption_tensor
 
 
-# In[12]:
+# In[13]:
 
 
-def evaluate_over_server(image_tensor,file_name, zlib_compression=False):
+def handle_test_DECODED_IMAGE_TRANSFER(image_tensor,file_name, zlib_compression=False):
     # image_tensor = read_image(file_name)
     # image_tensor = tf.expand_dims(image_tensor, 0) 
 
@@ -312,21 +337,16 @@ def evaluate_over_server(image_tensor,file_name, zlib_compression=False):
     predictions = response['predictions']
     predictions_prob = response['predictions_prob']
     tail_model_time = response['tail_model_time']
+    caption_tensor = response['predicted_captions']
     tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, tail_model_time)
 
-    return predictions, predictions_prob
+    return predictions, predictions_prob, caption_tensor
 
 
-# In[ ]:
+# In[14]:
 
 
-
-
-
-# In[13]:
-
-
-def evaluate_over_server_head_model(image_tensor,file_name, zlib_compression=False):
+def handle_test_SPLIT_LAYER_3(image_tensor,file_name, zlib_compression=False):
 
     # temp_input = tf.expand_dims(read_image(file_name), 0) 
     intermediate_tensor = head_model(image_tensor)
@@ -362,71 +382,27 @@ def evaluate_over_server_head_model(image_tensor,file_name, zlib_compression=Fal
 
     predictions = response['predictions']
     predictions_prob = response['predictions_prob']
+    caption_tensor = response['predicted_captions']
     tail_model_time = response['tail_model_time']
     tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, tail_model_time)
 
-    return predictions, predictions_prob
-
-
-# In[14]:
-
-
-def process_pred(ground_truth, prediction_tensor):
-    n = tf.squeeze(prediction_tensor).numpy()
-    df = pd.DataFrame(columns=['id_index','probability'])
-    predictions_str = ''
-    top_predictions = []
-    index = 0
-    for x in n:
-        if x > cfg.PREDICTIONS_THRESHOLD:
-            top_predictions.append(index)
-            predictions_str += "%s(%.2f) " % (imagesInfo.classes[index],x)
-            df = df.append({'id_index':int(index), 'probability':x},ignore_index = True)
-        index += 1
-
-    df = df.sort_values('probability', ascending=False)
-    sorted_predictions = df['id_index'].tolist()
-    sorted_predictions = [int(x) for x in sorted_predictions]
-
-    ground_truth_length = len(ground_truth)
-    predictions_length = len(sorted_predictions)
-
-    aligned_predictions = [-1] * ground_truth_length
-    TP = 0
-    for i in range(ground_truth_length):
-
-        print("ground_truth[i]=%s", str(ground_truth[i]))
-        print("sorted_predictions=%d", str(sorted_predictions))
-        if(ground_truth[i] in sorted_predictions):
-            aligned_predictions[i] = ground_truth[i]
-            TP += 1
-    accuracy = accuracy_score(ground_truth, aligned_predictions)
-
-    top_1_accuracy = 0.0
-    top_5_accuracy = 0.0
-    precision = 0
-    recall = 0
-    if(predictions_length > 0):
-        if(sorted_predictions[0] in ground_truth):
-            top_1_accuracy = 1.0
-        for i in range(5):
-            if((i < predictions_length) and (sorted_predictions[i] in ground_truth)):
-                top_5_accuracy = 1.0
-
-        precision = TP / predictions_length
-    if(predictions_length > 0):
-        recall = TP / ground_truth_length
-    return accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str
+    return predictions, predictions_prob, caption_tensor
 
 
 # In[15]:
 
 
-def evaluate_classification(image):
-    temp_input = tf.expand_dims(read_image(image), 0) 
-    h = head_model(temp_input)
-    s = tail_model(h)
-    return s
+def process_caption_predictions(caption_tensor, img_path):
+    pred_caption=' '.join(caption_tensor).rsplit(' ', 1)[0]
+    real_appn = []
+    real_caption_list = imagesInfo.annotations_dict[img_path]
+    for real_caption in real_caption_list:
+        real_caption=filt_text(real_caption)
+        real_appn.append(real_caption.split())
+    reference = real_appn
+    candidate = pred_caption.split()
+    score = sentence_bleu(reference, candidate, weights=[1]) #set your weights)
+    return score,real_caption,pred_caption
 
 
 # In[16]:
@@ -444,7 +420,7 @@ ds_val = ds_val.prefetch(tf.data.experimental.AUTOTUNE)
 count = 0
 max_test_images = max_tests
 
-coco_image_dir = '/home/suphale/snehal_bucket/coco/raw-data/val2017/'
+# coco_image_dir = '/home/suphale/snehal_bucket/coco/raw-data/val2017/'
 
 total_time = 0.0
 df = pd.DataFrame(columns=['img_path','ground_truth', 'top_predict', 'Prediction', 'accuracy', 'top_1_accuracy', 'top_5_accuracy', 'precision', 'recall', 'time'])
@@ -466,21 +442,23 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
     # accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str = process_predictions(sample_img_batch, ground_truth)
 
     if(test_number == test.STANDALONE):
-        predictions,predictions_prob = evaluate_standalone(sample_img_batch, img_path)
+        predictions,predictions_prob, caption_tensor = handle_test_STANDALONE(sample_img_batch, img_path)
     if(test_number == test.JPEG_TRANSFER):
-        predictions,predictions_prob = evaluate_file_over_server(coco_image_dir + img_path)
+        predictions,predictions_prob, caption_tensor = handle_test_JPEG_TRANSFER(img_path)
     if(test_number == test.DECODED_IMAGE_TRANSFER):
-        predictions,predictions_prob = evaluate_over_server(sample_img_batch, img_path)
+        predictions,predictions_prob, caption_tensor = handle_test_DECODED_IMAGE_TRANSFER(sample_img_batch, img_path)
     if(test_number == test.DECODED_IMAGE_TRANSFER_ZLIB):
-        predictions,predictions_prob = evaluate_over_server(sample_img_batch, img_path,zlib_compression=True)
+        predictions,predictions_prob, caption_tensor = handle_test_DECODED_IMAGE_TRANSFER(sample_img_batch, img_path,zlib_compression=True)
     if(test_number == test.SPLIT_LAYER_3):
-        predictions,predictions_prob = evaluate_over_server_head_model(sample_img_batch, img_path)
+        predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER_3(sample_img_batch, img_path)
     if(test_number == test.SPLIT_LAYER_3_ZLIB):
-        predictions,predictions_prob = evaluate_over_server_head_model(sample_img_batch, img_path,zlib_compression=True)
+        predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER_3(sample_img_batch, img_path,zlib_compression=True)
 
     tk.logTime(img_path, tk.E_STOP_CLIENT_PROCESSING)
 
     accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str = process_predictions(cfg, imagesInfo, ground_truth,predictions, predictions_prob)
+    bleu_score,real_caption,pred_caption = process_caption_predictions(caption_tensor, img_path)
+
     df = df.append(
         {'image':img_path, 
         'ground_truth':(str(imagesInfo.get_segmentation_texts(ground_truth))),
@@ -491,6 +469,9 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
         'top_5_accuracy':top_5_accuracy,
         'precision':precision,
         'recall':recall,
+        'BLEU':bleu_score,
+        'real_caption':real_caption,
+        'pred_caption':pred_caption,
         'time':0,
         },
         ignore_index = True)
@@ -512,6 +493,7 @@ Logger.milestone_print("top_1_accuracy  : %.2f" % (av_column.top_1_accuracy))
 Logger.milestone_print("top_5_accuracy  : %.2f" % (av_column.top_5_accuracy))
 Logger.milestone_print("precision       : %.2f" % (av_column.precision))
 Logger.milestone_print("recall          : %.2f" % (av_column.recall))
+Logger.milestone_print("BLEU            : %.2f" % (av_column.BLEU))
 Logger.milestone_print("time            : %.2f" % (av_column.time))
 
 # tk.printAll()
@@ -522,6 +504,50 @@ tk.summary()
 
 
 # ds_info
+
+
+# In[19]:
+
+
+Test = False
+if (Test == True):
+    ds_val = ds_val.take(1)
+    for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
+        count += 1
+
+        tensor_shape = len(ground_truth.get_shape().as_list())
+        if(tensor_shape > 1):
+            ground_truth = tf.squeeze(ground_truth,[0])
+        ground_truth = list(set(ground_truth.numpy()))
+
+        img_path = img_path.numpy().decode()
+        print(img_path)
+        features, result = model(sample_img_batch)
+        predictions, predictions_prob = get_predictions(cfg, result)
+        accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str = process_predictions(cfg, imagesInfo, ground_truth,predictions, predictions_prob)
+        print(predictions_str)
+
+        features = tf.reshape(features, [sample_img_batch.shape[0],8*8, 2048])
+        caption_tensor = captionModel.evaluate(features)
+
+        print(type(caption_tensor))
+        score,real_caption,pred_caption = process_caption_predictions(caption_tensor, img_path)
+
+        print("BLEU: %.2f" % (score))
+        print ('Real:', real_caption)
+        print ('Pred:', pred_caption)    
+
+
+# In[20]:
+
+
+# imagesInfo.annotations_dict
+
+
+# In[21]:
+
+
+# model.save(cfg.temp_path + '/extractor_model')
 
 
 # In[ ]:

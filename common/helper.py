@@ -42,7 +42,7 @@ def filt_text(text):
     return text
 
     # define a function to clean text data
-def extract_jpg_caption(images_path, line):
+def extract_jpg_caption(line):
     char_filter = r"[^\w]"
 
     jpg_path = None
@@ -50,7 +50,7 @@ def extract_jpg_caption(images_path, line):
 
     jpg_position = line.find(".jpg")
     if(jpg_position != -1):
-        jpg_path = images_path + '/' + line[:jpg_position+4]
+        jpg_path = line[:jpg_position+4]
 
         caption = line[jpg_position+5:].strip()
 
@@ -88,7 +88,7 @@ def extract_jpg_caption(images_path, line):
 class ImagesInfo:
     def __init__(self, cfg):
         self.cfg = cfg
-        all_imgs = [cfg.images_path + line.rstrip() for line in open(self.cfg.list_file)]
+        all_imgs = [line.rstrip() for line in open(self.cfg.list_file)]
         all_imgs = sorted(all_imgs)
         total_num_images = len(all_imgs)
         Logger.debug_print("The total images present in the dataset: {}".format(total_num_images))
@@ -142,7 +142,7 @@ class ImagesInfo:
         text = ""
         count = 0
         for line in Lines:
-            jpg_path, caption = extract_jpg_caption(self.cfg.images_path, line)
+            jpg_path, caption = extract_jpg_caption(line)
             if(jpg_path != None):
                 self.all_img_id.append(count)
                 self.all_img_vector.append(jpg_path)

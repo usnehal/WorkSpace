@@ -67,9 +67,8 @@ class Client:
             print("Received error from server, %s" % (confirmation.decode()))
 
 class Server:
-    def __init__(self,cfg,tailModel):
+    def __init__(self,cfg):
         self.cfg = cfg
-        self.tailModel = tailModel
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.request_count = 0
         self.callbacks = {}

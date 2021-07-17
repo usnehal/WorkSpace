@@ -3,26 +3,21 @@ set -e
 if [ -z "$1" ]
 then
   echo "no server ip"
+  SERVER=" "
 else
   #IP=35.200.232.85
   IP=$1
+  SERVER=" -s $IP"
 fi
 
+TESTS=" -m 1000"
+VERBOSE=" -v 0"
+
 cd ~/WorkSpace/       
-if [ -z "$IP" ]
-then
-python3 ./client.py -t 0 -v 0       
-python3 ./client.py -t 1 -v 0       
-python3 ./client.py -t 2 -v 0       
-python3 ./client.py -t 3 -v 0       
-python3 ./client.py -t 4 -v 0       
-python3 ./client.py -t 5 -v 0       
-else
-python3 ./client.py -s $IP -t 0 -v 0
-python3 ./client.py -s $IP -t 1 -v 0
-python3 ./client.py -s $IP -t 2 -v 0
-python3 ./client.py -s $IP -t 3 -v 0
-python3 ./client.py -s $IP -t 4 -v 0
-python3 ./client.py -s $IP -t 5 -v 0
-fi
+python3 ./client.py $SERVER -t 0 $VERBOSE $TESTS
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS
+python3 ./client.py $SERVER -t 2 $VERBOSE $TESTS
+python3 ./client.py $SERVER -t 3 $VERBOSE $TESTS
+python3 ./client.py $SERVER -t 4 $VERBOSE $TESTS
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS
 
