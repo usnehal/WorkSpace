@@ -45,6 +45,7 @@ from CaptionModel import CaptionModel
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--server', action='store', type=str, required=False)
 parser.add_argument('-t', '--test_number', action='store', type=int, required=False)
+parser.add_argument('-l', '--split_layer', action='store', type=int, required=False)
 parser.add_argument('-v', '--verbose', action='store', type=int, required=False)
 parser.add_argument('-i', '--image_size', action='store', type=int, required=False)
 parser.add_argument('-m', '--max_tests', action='store', type=int, required=False)
@@ -56,11 +57,15 @@ test_number = args.test_number
 verbose = args.verbose
 image_size = args.image_size
 max_tests = args.max_tests
+split_layer = args.split_layer
 
 if(verbose == None):
     verbose = 1
 
-test_number = 0
+if(split_layer == None):
+    split_layer = 3
+
+# test_number = 0
 if(test_number == None):
     test_number = test.STANDALONE
 if(test_number == 0):
@@ -131,6 +136,8 @@ split_val = "validation[:20%]"
 # split_val = "validation[:1%]"
 # h_image_height = 299
 # h_image_width = 299
+
+# split_layer = 3
 
 h_image_height = image_size
 h_image_width = image_size
@@ -223,10 +230,11 @@ if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED
 
 
 if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
-    head_model = tf.keras.models.load_model(cfg.saved_model_path + '/head_model')
+    head_model = tf.keras.models.load_model(cfg.saved_model_path + '/head_model_'+ str(split_layer))
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
     send_json_dict['model'] = 'tail_model'
+    send_json_dict['model_path'] = 'tail_model_' + str(split_layer)
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')

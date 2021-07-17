@@ -54,7 +54,7 @@ class TailModel:
 model = None
 captionModel = None
 
-def handle_load_model(msg,shape):
+def handle_load_model(msg,model_path_requested):
     global model
     global captionModel
     if(msg == 'model'):
@@ -70,7 +70,7 @@ def handle_load_model(msg,shape):
         captionModel = CaptionModel()
         return "OK"
     if(msg == 'tail_model'):
-        model_path = cfg.saved_model_path + '/tail_model'
+        model_path = cfg.saved_model_path + "/" + model_path_requested
         Logger.milestone_print("Loading model : %s from %s" % (model,model_path))
         model = None
         model = tf.keras.models.load_model(model_path)

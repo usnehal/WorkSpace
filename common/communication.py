@@ -117,10 +117,13 @@ class Server:
         data_type = obj['data_type']
         if(data_type == 'load_model_request'):
             model_type = obj['model']
+            model_path = None
+            if('model_path' in obj.keys()):
+                model_path = obj['model_path']
             response = ''
             if data_type in self.callbacks :
                 callback = self.callbacks[data_type]
-                response = callback(model_type,None)
+                response = callback(model_type,model_path)
 
             Logger.debug_print("handle_client:sending pred_caption" + response)
             c.send(response.encode())
