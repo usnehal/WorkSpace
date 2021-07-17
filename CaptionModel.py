@@ -180,9 +180,13 @@ class CaptionModel(Model):
             result.append(self.tokenizer.index_word[predicted_id])
 
             if self.tokenizer.index_word[predicted_id] == '<end>':
-                return result, attention_plot,predictions
+                return result
 
             dec_input = tf.expand_dims([predicted_id], 0)
 
         attention_plot = attention_plot[:len(result), :]
-        return result, attention_plot,predictions
+        # return result, attention_plot,predictions
+        # print(tf.shape(caption_tensor))
+        result=' '.join(result).rsplit(' ', 1)[0]    
+
+        return result

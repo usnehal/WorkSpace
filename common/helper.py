@@ -230,3 +230,13 @@ def process_predictions(cfg, imagesInfo, ground_truth, top_predictions, top_pred
     if(ground_truth_length > 0):
         recall = TP / ground_truth_length
     return accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str
+
+# extractor = tf.keras.Model(inputs=model.inputs,
+#                         outputs=[layer.output for layer in model.layers])
+# features = extractor(sample_img_batch)
+# for i, feature in enumerate(features):
+#     print(i, tf.shape(feature))
+
+# import  matplotlib.pyplot as plt
+# image = tf.squeeze(sample_img_batch,[0])
+# plt.imshow(image)
