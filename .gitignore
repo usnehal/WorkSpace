@@ -90,6 +90,7 @@ exp/checkpoints
 checkpoints
 saved_model/model
 temp/
+saved_model
 
 # IPython
 profile_default/
