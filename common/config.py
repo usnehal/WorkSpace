@@ -8,7 +8,7 @@ class Config():
         self.HOST_WSL = 2
         self.HOST_PI = 3
 
-        self.total_test_images = 100
+        self.total_test_images = 5000
         self.max_tokenized_words = 20000
         self.MAX_SEQ_LENGTH = 25
         self.batch_size = 32

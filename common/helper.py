@@ -109,7 +109,7 @@ class ImagesInfo:
         self.annotations_word_list = []
 
         self.df_captions = pd.read_csv(self.cfg.df_captions_csv)
-        self.df_instances = pd.read_csv(self.cfg.df_instances_csv)
+        # self.df_instances = pd.read_csv(self.cfg.df_instances_csv)
         self.df_categories = pd.read_csv(self.cfg.df_categories_csv)
 
         with open(cfg.saved_model_path + '/classes.pickle', 'rb') as handle:
