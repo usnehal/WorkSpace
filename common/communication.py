@@ -135,6 +135,7 @@ class Server:
                 zlib_compression = obj['zlib_compression']
             else:
                 zlib_compression = False
+            image_size = obj['image_size']
             Logger.debug_print("handle_client:sending OK")
             c.send("OK".encode())
 
@@ -162,7 +163,7 @@ class Server:
             response = ''
             if data_type in self.callbacks :
                 callback = self.callbacks[data_type]
-                response = callback(msg,tensor_shape)
+                response = callback(msg,tensor_shape,image_size)
 
             Logger.debug_print("handle_client:sending pred_caption" + response)
             c.send(response.encode())

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 #!pip install --upgrade git+https://github.com/EmGarr/kerod.git
 
 
-# In[2]:
+# In[6]:
 
 
 #%tensorflow_version 2.x
@@ -19,14 +19,14 @@ else:
     print('Found GPU at: {}'.format(device_name))
 
 
-# In[3]:
+# In[7]:
 
 
 import warnings
 warnings.filterwarnings('ignore')
 
 
-# In[4]:
+# In[8]:
 
 
 import  functools
@@ -39,11 +39,18 @@ from    tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 from    tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 
 
-# In[5]:
+# In[9]:
 
 
-from Helper import Config, ImagesInfo, Logger, Client, TimeKeeper
-from Helper import read_image
+from common.constants import test, BoxField, DatasetField
+from common.config import Config
+from common.logger import Logger
+from common.communication import Client
+from common.communication import Server
+from common.helper import ImagesInfo 
+from common.timekeeper import TimeKeeper
+from common.helper import read_image, filt_text, get_predictions,process_predictions
+from CaptionModel import CaptionModel
 
 
 # In[10]:
@@ -61,7 +68,7 @@ h_image_height = 299
 h_image_width = 299
 
 
-# In[7]:
+# In[11]:
 
 
 tk = TimeKeeper()
@@ -70,7 +77,7 @@ client = Client(cfg)
 imagesInfo = ImagesInfo(cfg)
 
 
-# In[8]:
+# In[12]:
 
 
 class BoxField:
@@ -119,7 +126,7 @@ def expand_dims_for_single_batch(image, ground_truths):
     return image, ground_truths
 
 
-# In[11]:
+# In[13]:
 
 
 ds_train, ds_info = tfds.load(name="coco/2017", split=split_train, data_dir=data_dir, shuffle_files=True, download=False, with_info=True)
@@ -133,10 +140,16 @@ ds_val = ds_val.map(expand_dims_for_single_batch, num_parallel_calls=tf.data.exp
 ds_val = ds_val.prefetch(tf.data.experimental.AUTOTUNE)
 
 
+# In[15]:
+
+
+# ds_info
+
+
 # # Load and train the network
 # 
 
-# In[12]:
+# In[16]:
 
 
 # Find total number of classes in the coco dataset
@@ -145,7 +158,7 @@ num_classes = len(classes)
 print(num_classes)
 
 
-# In[13]:
+# In[17]:
 
 
 image_model = tf.keras.applications.InceptionV3(include_top=False,weights='imagenet')
@@ -165,7 +178,7 @@ model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy']
 # model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
 
 
-# In[10]:
+# In[18]:
 
 
 for layer in model.layers:
@@ -173,7 +186,7 @@ for layer in model.layers:
         print(layer.trainable)
 
 
-# In[11]:
+# In[19]:
 
 
 callbacks = [
@@ -189,7 +202,7 @@ model.save(cfg.temp_path + '/model')
 
 # ## Visualisation of few images
 
-# In[12]:
+# In[20]:
 
 
 for test_index in range(10):
@@ -217,7 +230,7 @@ for test_index in range(10):
 
 # ## Tensorboard
 
-# In[13]:
+# In[ ]:
 
 
 # Load TENSORBOARD
@@ -226,7 +239,7 @@ get_ipython().run_line_magic('load_ext', 'tensorboard')
 get_ipython().run_line_magic('tensorboard', '--logdir logs')
 
 
-# In[43]:
+# In[ ]:
 
 
 # ds_info

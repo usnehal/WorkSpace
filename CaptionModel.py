@@ -126,18 +126,21 @@ class Decoder(Model):
 
 
 class CaptionModel(Model):
-    def __init__(self):
+    def __init__(self, image_size=250, model_path=None):
+        self.image_size = image_size
         embedding_dim = 256
         super(CaptionModel, self).__init__()
-        with open('saved_model/tokenizer.pickle', 'rb') as handle:
+        if(model_path == None):
+            model_path = './saved_model' + '/' + 'caption_i_%d' % (self.image_size)
+
+        with open(model_path + '/tokenizer.pickle', 'rb') as handle:
             self.tokenizer = pickle.load(handle)
-        max_tokenized_words = 20000
+        max_tokenized_words = 5000
         self.MAX_SEQ_LENGTH = 25
         batch_size = 32
         embedding_dim = 256 
         units = 512
         vocab_size = max_tokenized_words + 1
-
 
         s = tf.zeros([32, 64, 2048], tf.int32)
         self.encoder=Encoder(embedding_dim)
@@ -147,9 +150,8 @@ class CaptionModel(Model):
         dec_input = tf.expand_dims([self.tokenizer.word_index['<start>']] * batch_size, 1)
         predictions, hidden_out, attention_weights= self.decoder(dec_input, features, hidden)
 
-        self.decoder.load_weights("./saved_model/decoder.h5")
-        self.encoder.load_weights("./saved_model/encoder.h5")
-
+        self.decoder.load_weights(model_path + "/decoder.h5" )
+        self.encoder.load_weights(model_path + "/encoder.h5" )
         
     def call(self, features):
         # extract the features from the image shape: (batch, 8*8, embed_dim)

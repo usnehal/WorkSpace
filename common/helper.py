@@ -9,6 +9,7 @@ import numpy as np
 import tensorflow as tf
 from    sklearn.metrics import accuracy_score
 import  socket
+from   nltk.translate.bleu_score import sentence_bleu
 
 from common.logger import Logger
 from common.config import Config
@@ -112,7 +113,7 @@ class ImagesInfo:
         # self.df_instances = pd.read_csv(self.cfg.df_instances_csv)
         self.df_categories = pd.read_csv(self.cfg.df_categories_csv)
 
-        with open(cfg.saved_model_path + '/classes.pickle', 'rb') as handle:
+        with open(cfg.saved_model_path + '/coco_classes.pickle', 'rb') as handle:
             self.classes = pickle.load(handle)
 
         doc = self.load_doc(self.cfg.text_file)
@@ -240,3 +241,72 @@ def process_predictions(cfg, imagesInfo, ground_truth, top_predictions, top_pred
 # import  matplotlib.pyplot as plt
 # image = tf.squeeze(sample_img_batch,[0])
 # plt.imshow(image)
+
+def get_reshape_size(image_height):
+    if(image_height == 100):
+        return 1
+    if(image_height == 125):
+        return 2
+    if(image_height == 150):
+        return 3
+    if(image_height >= 175) and (image_height <= 200) :
+        return 4
+    if(image_height == 225) :
+        return 5
+    if(image_height == 250) :
+        return 6
+    if(image_height == 275) :
+        return 7
+    if(image_height == 299):
+        return 8
+    if(image_height == 300):
+        return 8
+    if(image_height == 325):
+        return 8
+    if(image_height == 350):
+        return 9
+    if(image_height == 375):
+        return 10
+    if(image_height == 400):
+        return 11
+    else:
+        return 8
+
+def process_caption_predictions(caption_tensor, img_path,imagesInfo):
+    pred_caption=' '.join(caption_tensor).rsplit(' ', 1)[0]
+    real_appn = []
+    real_caption_list = imagesInfo.annotations_dict[img_path]
+    for real_caption in real_caption_list:
+        real_caption=filt_text(real_caption)
+        real_appn.append(real_caption.split())
+    reference = real_appn
+    candidate = pred_caption.split()
+    score = sentence_bleu(reference, candidate, weights=[1]) #set your weights)
+    return score,real_caption,pred_caption
+
+def run_tests(ds_val,model,captionModel,image_size,imagesInfo):
+    count = 0
+    ds_val = ds_val.take(2)
+    for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
+        count += 1
+
+        tensor_shape = len(ground_truth.get_shape().as_list())
+        if(tensor_shape > 1):
+            ground_truth = tf.squeeze(ground_truth,[0])
+        ground_truth = list(set(ground_truth.numpy()))
+
+        img_path = img_path.numpy().decode()
+        print(img_path)
+        features, result = model(sample_img_batch)
+        predictions, predictions_prob = get_predictions(cfg, result)
+        accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str = process_predictions(cfg, imagesInfo, ground_truth,predictions, predictions_prob)
+        print(predictions_str)
+
+        features = tf.reshape(features, [sample_img_batch.shape[0],get_reshape_size(image_size)*get_reshape_size(image_size), 2048])
+        caption_tensor = captionModel.evaluate(features)
+
+        score,real_caption,pred_caption = process_caption_predictions(caption_tensor, img_path)
+
+        print ("BLEU: %.2f" % (score))
+        print ('Real:', real_caption)
+        print ('Pred:', pred_caption)            

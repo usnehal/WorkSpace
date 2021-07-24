@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 #!/usr/bin/env python3
 
 
-# In[2]:
+# In[ ]:
 
 
 import socket
@@ -28,18 +28,18 @@ from tqdm import tqdm
 import  tensorflow_datasets as tfds
 import  functools
 
-from common.constants import test
+from common.constants import test, BoxField, DatasetField
 from common.config import Config
 from common.logger import Logger
 from common.communication import Client
 from common.communication import Server
 from common.helper import ImagesInfo 
 from common.timekeeper import TimeKeeper
-from common.helper import read_image, filt_text, get_predictions,process_predictions
+from common.helper import read_image, filt_text, get_predictions,process_predictions,get_reshape_size,process_caption_predictions
 from CaptionModel import CaptionModel
 
 
-# In[3]:
+# In[ ]:
 
 
 parser = argparse.ArgumentParser()
@@ -65,7 +65,7 @@ if(verbose == None):
 if(split_layer == None):
     split_layer = 3
 
-# test_number = 0
+test_number = 4
 if(test_number == None):
     test_number = test.STANDALONE
 if(test_number == 0):
@@ -91,7 +91,9 @@ test_scenarios = {
         }
 
 if(image_size == None):
-    image_size = 299
+    image_size = 250
+
+image_size = 400
 
 if(max_tests == None):
     max_tests = 50
@@ -104,13 +106,13 @@ else:
 print("Test scenario = %d %s" % (test_number, test_scenarios[test_number]))
 
 
-# In[4]:
+# In[ ]:
 
 
 # tf.compat.v1.disable_eager_execution()
 
 
-# In[5]:
+# In[ ]:
 
 
 Logger.set_log_level(verbose)
@@ -120,13 +122,13 @@ client = Client(cfg)
 imagesInfo = ImagesInfo(cfg)
 
 
-# In[6]:
+# In[ ]:
 
 
 from CaptionModel import CaptionModel
 
 
-# In[7]:
+# In[ ]:
 
 
 data_dir='/home/suphale/coco'
@@ -147,22 +149,8 @@ Logger.event_print("Image shape     : (%d %d)" % (h_image_height, h_image_width)
 Logger.event_print("Max tests       : %d" % (max_tests))
 
 
-# In[8]:
+# In[ ]:
 
-
-class BoxField:
-    BOXES = 'bbox'
-    KEYPOINTS = 'keypoints'
-    LABELS = 'label'
-    MASKS = 'masks'
-    NUM_BOXES = 'num_boxes'
-    SCORES = 'scores'
-    WEIGHTS = 'weights'
-
-class DatasetField:
-    IMAGES = 'images'
-    IMAGES_INFO = 'images_information'
-    IMAGES_PMASK = 'images_padding_mask'
 
 def my_preprocess(inputs):
     image = inputs['image']
@@ -197,26 +185,27 @@ def expand_dims_for_single_batch(image, ground_truths, img_path):
     return image, ground_truths, img_path
 
 
-# In[9]:
+# In[ ]:
 
 
 # tf.compat.v1.disable_eager_execution()
 
 
-# In[10]:
+# In[ ]:
 
 
 if(test_number in [test.STANDALONE]):
-    model = tf.keras.models.load_model(cfg.saved_model_path + '/model')
-    model = tf.keras.Model(inputs=model.inputs,outputs=[ 
-                                model.layers[310].output, 
-                                model.layers[313].output])    
-    captionModel = CaptionModel()
+    model = tf.keras.models.load_model(cfg.saved_model_path + '/iv3_full_model', compile=False)
+    # model = tf.keras.Model(inputs=model.inputs,outputs=[ 
+    #                             model.layers[310].output, 
+    #                             model.layers[313].output])    
+    captionModel = CaptionModel(image_size=h_image_height)
 if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED_IMAGE_TRANSFER_ZLIB]):
-    # head_model = tf.keras.models.load_model(cfg.saved_model_path + '/model')
+    # head_model = tf.keras.models.load_model(cfg.saved_model_path + '/model', compile=False)
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
     send_json_dict['model'] = 'model'
+    send_json_dict['model_path'] = '/iv3_full_model'
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
@@ -224,17 +213,18 @@ if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
     send_json_dict['model'] = 'captionModel'
+    send_json_dict['model_path'] = '/caption_i_%d' % (h_image_height)
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
 
 
 if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
-    head_model = tf.keras.models.load_model(cfg.saved_model_path + '/head_model_'+ str(split_layer))
+    head_model = tf.keras.models.load_model(cfg.saved_model_path + '/iv3_head_model_%d' % (split_layer), compile=False)
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
     send_json_dict['model'] = 'tail_model'
-    send_json_dict['model_path'] = 'tail_model_' + str(split_layer)
+    send_json_dict['model_path'] = '/iv3_tail_model_%d' % (split_layer)
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
@@ -242,12 +232,13 @@ if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
     send_json_dict['model'] = 'captionModel'
+    send_json_dict['model_path'] = '/caption_i_%d' % (h_image_height)
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
 
 
-# In[11]:
+# In[ ]:
 
 
 # @tf.function
@@ -255,7 +246,8 @@ def handle_test_STANDALONE(sample_img_batch, img_path):
     # print(ground_truth)
     features, result = model(sample_img_batch)
 
-    features = tf.reshape(features, [sample_img_batch.shape[0],8*8, 2048])
+    reshape_layer_size = get_reshape_size(h_image_height)
+    features = tf.reshape(features, [sample_img_batch.shape[0],reshape_layer_size*reshape_layer_size, 2048])
     caption_tensor = captionModel.evaluate(features)
 
     tk.logInfo(img_path, tk.I_BUFFER_SIZE, 0)
@@ -271,7 +263,7 @@ def handle_test_STANDALONE(sample_img_batch, img_path):
     return predictions, predictions_prob, caption_tensor
 
 
-# In[12]:
+# In[ ]:
 
 
 def handle_test_JPEG_TRANSFER(file_name):
@@ -282,6 +274,7 @@ def handle_test_JPEG_TRANSFER(file_name):
         send_json_dict['file_name'] = file_name
         send_json_dict['data_size'] = (len(byte_buffer_to_send))
         send_json_dict['data_shape'] = "(%d,)" % (len(byte_buffer_to_send))
+        send_json_dict['image_size'] = image_size
         # send_json_dict['data_buffer'] = blob_data
 
         app_json = json.dumps(send_json_dict)
@@ -306,7 +299,7 @@ def handle_test_JPEG_TRANSFER(file_name):
         return predictions, predictions_prob, caption_tensor
 
 
-# In[13]:
+# In[ ]:
 
 
 def handle_test_DECODED_IMAGE_TRANSFER(image_tensor,file_name, zlib_compression=False):
@@ -326,6 +319,7 @@ def handle_test_DECODED_IMAGE_TRANSFER(image_tensor,file_name, zlib_compression=
     send_json_dict['file_name'] = file_name
     send_json_dict['data_size'] = (len(byte_buffer_to_send))
     send_json_dict['data_shape'] = image_np_array.shape
+    send_json_dict['image_size'] = image_size
     if(zlib_compression == True):
         send_json_dict['zlib_compression'] = 'yes'
     else:
@@ -352,7 +346,7 @@ def handle_test_DECODED_IMAGE_TRANSFER(image_tensor,file_name, zlib_compression=
     return predictions, predictions_prob, caption_tensor
 
 
-# In[14]:
+# In[ ]:
 
 
 def handle_test_SPLIT_LAYER_3(image_tensor,file_name, zlib_compression=False):
@@ -372,6 +366,7 @@ def handle_test_SPLIT_LAYER_3(image_tensor,file_name, zlib_compression=False):
     send_json_dict['file_name'] = file_name
     send_json_dict['data_size'] = (len(byte_buffer_to_send))
     send_json_dict['data_shape'] = image_np_array.shape
+    send_json_dict['image_size'] = image_size
     if(zlib_compression == True):
         send_json_dict['zlib_compression'] = 'yes'
     else:
@@ -398,23 +393,13 @@ def handle_test_SPLIT_LAYER_3(image_tensor,file_name, zlib_compression=False):
     return predictions, predictions_prob, caption_tensor
 
 
-# In[15]:
+# In[ ]:
 
 
-def process_caption_predictions(caption_tensor, img_path):
-    pred_caption=' '.join(caption_tensor).rsplit(' ', 1)[0]
-    real_appn = []
-    real_caption_list = imagesInfo.annotations_dict[img_path]
-    for real_caption in real_caption_list:
-        real_caption=filt_text(real_caption)
-        real_appn.append(real_caption.split())
-    reference = real_appn
-    candidate = pred_caption.split()
-    score = sentence_bleu(reference, candidate, weights=[1]) #set your weights)
-    return score,real_caption,pred_caption
 
 
-# In[16]:
+
+# In[ ]:
 
 
 ds_val, ds_info = tfds.load(name="coco/2017", split=split_val, data_dir=data_dir, shuffle_files=False, download=False, with_info=True)
@@ -423,7 +408,7 @@ ds_val = ds_val.map(expand_dims_for_single_batch, num_parallel_calls=tf.data.exp
 ds_val = ds_val.prefetch(tf.data.experimental.AUTOTUNE)
 
 
-# In[17]:
+# In[ ]:
 
 
 count = 0
@@ -469,7 +454,7 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
     tk.logTime(img_path, tk.E_STOP_CLIENT_PROCESSING)
 
     accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str = process_predictions(cfg, imagesInfo, ground_truth,predictions, predictions_prob)
-    bleu_score,real_caption,pred_caption = process_caption_predictions(caption_tensor, img_path)
+    bleu_score,real_caption,pred_caption = process_caption_predictions(caption_tensor, img_path, imagesInfo)
 
     df = df.append(
         {'image':img_path, 
@@ -488,14 +473,17 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
         },
         ignore_index = True)
     truth_str = ' '.join([str(elem) for elem in imagesInfo.get_segmentation_texts(ground_truth)])
-    # Logger.debug_print("ground_truth  : %s" % (truth_str))
-    # Logger.debug_print("Prediction    : %s" % (predictions_str))
+    # print("real_caption  : %s" % (real_caption))
+    # print("pred_caption  : %s" % (pred_caption))
 
     tk.finishRecord(img_path)
 
 df.to_csv(cfg.temp_path + '/results_'+cfg.timestr+'.csv')
-av_column = df.mean(axis=0)
 
+print(df['real_caption'].iloc[0])
+print(df['pred_caption'].iloc[0])
+
+av_column = df.mean(axis=0)
 Logger.milestone_print("----------------:")
 Logger.milestone_print("Test scenario   : %d %s" % (test_number, test_scenarios[test_number]))
 Logger.milestone_print("Image shape     : (%d %d)" % (h_image_height, h_image_width))
@@ -513,7 +501,7 @@ tk.summary()
     
 
 
-# In[ ]:
+# In[23]:
 
 
 
@@ -529,32 +517,7 @@ tk.summary()
 
 
 Test = False
-if (Test == True):
-    ds_val = ds_val.take(1)
-    for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
-        count += 1
-
-        tensor_shape = len(ground_truth.get_shape().as_list())
-        if(tensor_shape > 1):
-            ground_truth = tf.squeeze(ground_truth,[0])
-        ground_truth = list(set(ground_truth.numpy()))
-
-        img_path = img_path.numpy().decode()
-        print(img_path)
-        features, result = model(sample_img_batch)
-        predictions, predictions_prob = get_predictions(cfg, result)
-        accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str = process_predictions(cfg, imagesInfo, ground_truth,predictions, predictions_prob)
-        print(predictions_str)
-
-        features = tf.reshape(features, [sample_img_batch.shape[0],8*8, 2048])
-        caption_tensor = captionModel.evaluate(features)
-
-        print(type(caption_tensor))
-        score,real_caption,pred_caption = process_caption_predictions(caption_tensor, img_path)
-
-        print("BLEU: %.2f" % (score))
-        print ('Real:', real_caption)
-        print ('Pred:', pred_caption)    
+# if (Test == True):
 
 
 # In[ ]:

@@ -31,7 +31,7 @@ from common.communication import Client
 from common.communication import Server
 from common.helper import ImagesInfo 
 from common.timekeeper import TimeKeeper
-from common.helper import read_image, filt_text, get_predictions
+from common.helper import read_image, filt_text, get_predictions, get_reshape_size
 from CaptionModel import CaptionModel
 
 
@@ -58,29 +58,30 @@ def handle_load_model(msg,model_path_requested):
     global model
     global captionModel
     if(msg == 'model'):
-        model_path = cfg.saved_model_path + '/model'
-        Logger.milestone_print("Loading model : %s from %s" % (model,model_path))
+        model_path = cfg.saved_model_path + model_path_requested
+        Logger.milestone_print("Loading model : from %s" % (model_path))
         model = None
-        model = tf.keras.models.load_model(model_path)
-        # model = tf.keras.models.load_model(cfg.temp_path + '/extractor_model')
+        model = tf.keras.models.load_model(model_path, compile=False)
+        # model = tf.keras.models.load_model(cfg.temp_path + '/extractor_model', compile=False)
         return "OK"
     if(msg == 'captionModel'):
-        Logger.milestone_print("Loading model : %s" % (msg))
+        model_path = cfg.saved_model_path + model_path_requested
         captionModel = None
-        captionModel = CaptionModel()
+        Logger.milestone_print("Loading caption model : from %s" % (model_path))
+        captionModel = CaptionModel(model_path=model_path)
         return "OK"
     if(msg == 'tail_model'):
         model_path = cfg.saved_model_path + "/" + model_path_requested
-        Logger.milestone_print("Loading model : %s from %s" % (model,model_path))
+        Logger.milestone_print("Loading model : from %s" % (model_path))
         model = None
-        model = tf.keras.models.load_model(model_path)
+        model = tf.keras.models.load_model(model_path, compile=False)
         return "OK"
 
 
 # In[5]:
 
 
-def handle_image_file(msg,shape):
+def handle_image_file(msg,shape,image_size):
     temp_file = '/tmp/temp.bin'
     f = open(temp_file, "wb")
     f.write(msg)
@@ -89,7 +90,7 @@ def handle_image_file(msg,shape):
     t0 = time.perf_counter()
     image_tensor = tf.expand_dims(read_image(temp_file), 0) 
     features, result = model(image_tensor)
-    features = tf.reshape(features, [1,8*8, 2048])
+    features = tf.reshape(features, [1,get_reshape_size(image_size)*get_reshape_size(image_size), 2048])
     caption_tensor = captionModel.evaluate(features)
     t1 = time.perf_counter() - t0
 
@@ -110,7 +111,7 @@ def handle_image_file(msg,shape):
 # In[6]:
 
 
-def handle_image_tensor(msg,shape):
+def handle_image_tensor(msg,shape,image_size):
     generated_np_array = np.frombuffer(msg, dtype=float32)
     generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
     generated_image_np_array = generated_np_array.reshape(shape)
@@ -118,7 +119,7 @@ def handle_image_tensor(msg,shape):
 
     t0 = time.perf_counter()
     features, result = model(image_tensor)
-    features = tf.reshape(features, [1,8*8, 2048])
+    features = tf.reshape(features, [1,get_reshape_size(image_size)*get_reshape_size(image_size), 2048])
     caption_tensor = captionModel.evaluate(features)
     t1 = time.perf_counter() - t0
 
@@ -139,15 +140,6 @@ def handle_image_tensor(msg,shape):
 # In[7]:
 
 
-def extract_image_features(self, sample_img_batch):
-    features = self.image_features_extract_model(sample_img_batch)
-    features = tf.reshape(features, [sample_img_batch.shape[0],8*8, 2048])
-    return features
-
-
-# In[8]:
-
-
 Logger.set_log_level(1)
 # logger = Logger()
 tk = TimeKeeper()
@@ -156,7 +148,7 @@ client = Client(cfg)
 imagesInfo = ImagesInfo(cfg)
 
 
-# In[9]:
+# In[8]:
 
 
 tailModel = TailModel(cfg)
