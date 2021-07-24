@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 #!/usr/bin/env python3
 
 
-# In[2]:
+# In[ ]:
 
 
 import os
@@ -35,7 +35,7 @@ from common.helper import read_image, filt_text, get_predictions, get_reshape_si
 from CaptionModel import CaptionModel
 
 
-# In[3]:
+# In[ ]:
 
 
 class TailModel:
@@ -48,7 +48,7 @@ class TailModel:
         return result
 
 
-# In[4]:
+# In[ ]:
 
 
 model = None
@@ -78,7 +78,7 @@ def handle_load_model(msg,model_path_requested):
         return "OK"
 
 
-# In[5]:
+# In[ ]:
 
 
 def handle_image_file(msg,shape,image_size):
@@ -87,10 +87,14 @@ def handle_image_file(msg,shape,image_size):
     f.write(msg)
     f.close()
 
+    # print("image_size=%d" %(image_size))
+
     t0 = time.perf_counter()
-    image_tensor = tf.expand_dims(read_image(temp_file), 0) 
+    image_tensor = tf.expand_dims(read_image(temp_file, height=image_size, width=image_size), 0) 
     features, result = model(image_tensor)
-    features = tf.reshape(features, [1,get_reshape_size(image_size)*get_reshape_size(image_size), 2048])
+    reshape_size = get_reshape_size(image_size)
+    # print("reshape_size=%d" %(reshape_size))
+    features = tf.reshape(features, [1, reshape_size*reshape_size, 2048])
     caption_tensor = captionModel.evaluate(features)
     t1 = time.perf_counter() - t0
 
@@ -108,7 +112,7 @@ def handle_image_file(msg,shape,image_size):
     return str(app_json)
 
 
-# In[6]:
+# In[ ]:
 
 
 def handle_image_tensor(msg,shape,image_size):
@@ -137,7 +141,7 @@ def handle_image_tensor(msg,shape,image_size):
     return str(app_json)
 
 
-# In[7]:
+# In[ ]:
 
 
 Logger.set_log_level(1)
@@ -148,7 +152,7 @@ client = Client(cfg)
 imagesInfo = ImagesInfo(cfg)
 
 
-# In[8]:
+# In[ ]:
 
 
 tailModel = TailModel(cfg)

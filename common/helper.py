@@ -26,7 +26,7 @@ cfg = Config()
 #     image -= 1.
 #     return image, label
 
-def read_image(image_path, height=299, width=299):
+def read_image(image_path, height, width):
     image = tf.io.read_file(image_path)
     image = tf.image.decode_jpeg(image, channels=3)
     image = tf.image.resize(image, (height, width))

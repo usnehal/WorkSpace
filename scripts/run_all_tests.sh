@@ -1,4 +1,5 @@
 set -e
+set -x
 
 if [ -z "$1" ]
 then
@@ -10,7 +11,7 @@ else
   SERVER=" -s $IP"
 fi
 
-TESTS=" -m 100"
+TESTS=" -m 50"
 VERBOSE=" -v 0"
 
 cd ~/WorkSpace/       

@@ -136,16 +136,11 @@ N_LABELS = 80
 # split_val = "validation"
 split_val = "validation[:20%]"
 # split_val = "validation[:1%]"
-# h_image_height = 299
-# h_image_width = 299
 
 # split_layer = 3
 
-h_image_height = image_size
-h_image_width = image_size
-
 Logger.event_print("Test scenario   : %d %s" % (test_number, test_scenarios[test_number]))
-Logger.event_print("Image shape     : (%d %d)" % (h_image_height, h_image_width))
+Logger.event_print("Image shape     : (%d %d)" % (image_size, image_size))
 Logger.event_print("Max tests       : %d" % (max_tests))
 
 
@@ -154,7 +149,7 @@ Logger.event_print("Max tests       : %d" % (max_tests))
 
 def my_preprocess(inputs):
     image = inputs['image']
-    image = tf.image.resize(image, (h_image_height, h_image_width))
+    image = tf.image.resize(image, (image_size, image_size))
     image = tf.cast(image, tf.float32)
     image /= 127.5
     image -= 1.
@@ -199,7 +194,7 @@ if(test_number in [test.STANDALONE]):
     # model = tf.keras.Model(inputs=model.inputs,outputs=[ 
     #                             model.layers[310].output, 
     #                             model.layers[313].output])    
-    captionModel = CaptionModel(image_size=h_image_height)
+    captionModel = CaptionModel(image_size=image_size)
 if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED_IMAGE_TRANSFER_ZLIB]):
     # head_model = tf.keras.models.load_model(cfg.saved_model_path + '/model', compile=False)
     send_json_dict = {}
@@ -213,7 +208,7 @@ if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
     send_json_dict['model'] = 'captionModel'
-    send_json_dict['model_path'] = '/caption_i_%d' % (h_image_height)
+    send_json_dict['model_path'] = '/caption_i_%d' % (image_size)
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
@@ -232,7 +227,7 @@ if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
     send_json_dict['model'] = 'captionModel'
-    send_json_dict['model_path'] = '/caption_i_%d' % (h_image_height)
+    send_json_dict['model_path'] = '/caption_i_%d' % (image_size)
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
@@ -246,7 +241,7 @@ def handle_test_STANDALONE(sample_img_batch, img_path):
     # print(ground_truth)
     features, result = model(sample_img_batch)
 
-    reshape_layer_size = get_reshape_size(h_image_height)
+    reshape_layer_size = get_reshape_size(image_size)
     features = tf.reshape(features, [sample_img_batch.shape[0],reshape_layer_size*reshape_layer_size, 2048])
     caption_tensor = captionModel.evaluate(features)
 
@@ -486,7 +481,7 @@ print(df['pred_caption'].iloc[0])
 av_column = df.mean(axis=0)
 Logger.milestone_print("----------------:")
 Logger.milestone_print("Test scenario   : %d %s" % (test_number, test_scenarios[test_number]))
-Logger.milestone_print("Image shape     : (%d %d)" % (h_image_height, h_image_width))
+Logger.milestone_print("Image shape     : (%d %d)" % (image_size, image_size))
 Logger.milestone_print("Max tests       : %d" % (max_tests))
 Logger.milestone_print("accuracy        : %.2f" % (av_column.accuracy))
 Logger.milestone_print("top_1_accuracy  : %.2f" % (av_column.top_1_accuracy))
