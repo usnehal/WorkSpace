@@ -171,7 +171,7 @@ class CaptionModel(Model):
             # get the output from decoder
             predictions, hidden, attention_weights = self.decoder(dec_input, features, hidden)
 
-            attention_plot[i] = tf.reshape(attention_weights, (-1, )).numpy()
+            # attention_plot[i] = tf.reshape(attention_weights, (-1, )).numpy()
 
             #extract the predicted id(embedded value) which carries the max value
             predicted_id = tf.argmax(tf.transpose(predictions))
@@ -184,7 +184,7 @@ class CaptionModel(Model):
 
             dec_input = tf.expand_dims([predicted_id], 0)
 
-        attention_plot = attention_plot[:len(result), :]
+        # attention_plot = attention_plot[:len(result), :]
         # return result, attention_plot,predictions
         # print(tf.shape(caption_tensor))
         result=' '.join(result).rsplit(' ', 1)[0]    
