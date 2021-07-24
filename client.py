@@ -65,7 +65,7 @@ if(verbose == None):
 if(split_layer == None):
     split_layer = 3
 
-test_number = 4
+# test_number = 4
 if(test_number == None):
     test_number = test.STANDALONE
 if(test_number == 0):
@@ -93,7 +93,7 @@ test_scenarios = {
 if(image_size == None):
     image_size = 250
 
-image_size = 400
+# image_size = 400
 
 if(max_tests == None):
     max_tests = 50
@@ -501,7 +501,7 @@ tk.summary()
     
 
 
-# In[23]:
+# In[ ]:
 
 
 
