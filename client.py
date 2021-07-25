@@ -50,7 +50,6 @@ parser.add_argument('-v', '--verbose', action='store', type=int, required=False)
 parser.add_argument('-i', '--image_size', action='store', type=int, required=False)
 parser.add_argument('-m', '--max_tests', action='store', type=int, required=False)
 args, unknown = parser.parse_known_args()
-print(args.server)
 
 server_ip = args.server
 test_number = args.test_number
@@ -65,29 +64,29 @@ if(verbose == None):
 if(split_layer == None):
     split_layer = 3
 
-# test_number = 4
+# test_number = 2
 if(test_number == None):
     test_number = test.STANDALONE
-if(test_number == 0):
-    test_number = test.STANDALONE
 if(test_number == 1):
-    test_number = test.JPEG_TRANSFER
+    test_number = test.STANDALONE
 if(test_number == 2):
-    test_number = test.DECODED_IMAGE_TRANSFER
+    test_number = test.JPEG_TRANSFER
 if(test_number == 3):
-    test_number = test.DECODED_IMAGE_TRANSFER_ZLIB
+    test_number = test.DECODED_IMAGE_TRANSFER
 if(test_number == 4):
-    test_number = test.SPLIT_LAYER_3
+    test_number = test.DECODED_IMAGE_TRANSFER_ZLIB
 if(test_number == 5):
-    test_number = test.SPLIT_LAYER_3_ZLIB
+    test_number = test.SPLIT_LAYER
+if(test_number == 6):
+    test_number = test.SPLIT_LAYER_ZLIB
 
 test_scenarios = {  
         test.STANDALONE:                    "standalone processing at client device", 
         test.JPEG_TRANSFER:                 "Complete jpg file buffer transfer", 
         test.DECODED_IMAGE_TRANSFER:        "Decoded image buffer transfer",
         test.DECODED_IMAGE_TRANSFER_ZLIB:   "Decoded image buffer transfer with zlib compression",
-        test.SPLIT_LAYER_3:                 "split model at layer 3",
-        test.SPLIT_LAYER_3_ZLIB:            "split model at layer 3 with zlib compression",
+        test.SPLIT_LAYER:                 "split model at layer 3",
+        test.SPLIT_LAYER_ZLIB:            "split model at layer 3 with zlib compression",
         }
 
 if(image_size == None):
@@ -103,7 +102,7 @@ else:
     print("max_tests must be multiple of 50 and less than or equal to 5000")
     exit(1)
 
-print("Test scenario = %d %s" % (test_number, test_scenarios[test_number]))
+# print("Test scenario[%d] %s" % (test_number, test_scenarios[test_number]))
 
 
 # In[ ]:
@@ -139,9 +138,9 @@ split_val = "validation[:20%]"
 
 # split_layer = 3
 
-Logger.event_print("Test scenario   : %d %s" % (test_number, test_scenarios[test_number]))
-Logger.event_print("Image shape     : (%d %d)" % (image_size, image_size))
-Logger.event_print("Max tests       : %d" % (max_tests))
+Logger.milestone_print("Test scenario   : [%d] %s" % (test_number, test_scenarios[test_number]))
+Logger.milestone_print("Image shape     : (%d %d)" % (image_size, image_size))
+Logger.milestone_print("Max tests       : %d" % (max_tests))
 
 
 # In[ ]:
@@ -149,10 +148,10 @@ Logger.event_print("Max tests       : %d" % (max_tests))
 
 def my_preprocess(inputs):
     image = inputs['image']
-    image = tf.image.resize(image, (image_size, image_size))
-    image = tf.cast(image, tf.float32)
-    image /= 127.5
-    image -= 1.
+    # image = tf.image.resize(image, (image_size, image_size))
+    # image = tf.cast(image, tf.float32)
+    # image /= 127.5
+    # image -= 1.
 
     targets = inputs['objects']
     img_path = inputs['image/filename']
@@ -190,10 +189,13 @@ def expand_dims_for_single_batch(image, ground_truths, img_path):
 
 
 if(test_number in [test.STANDALONE]):
-    model = tf.keras.models.load_model(cfg.saved_model_path + '/iv3_full_model', compile=False)
+    model_path = cfg.saved_model_path + '/iv3_full_model'
+    Logger.event_print("Loading model : from %s" % (model_path))
+    model = tf.keras.models.load_model(model_path, compile=False)
     # model = tf.keras.Model(inputs=model.inputs,outputs=[ 
     #                             model.layers[310].output, 
-    #                             model.layers[313].output])    
+    #                             model.layers[313].output])
+    print("Finished loading")
     captionModel = CaptionModel(image_size=image_size)
 if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED_IMAGE_TRANSFER_ZLIB]):
     # head_model = tf.keras.models.load_model(cfg.saved_model_path + '/model', compile=False)
@@ -214,8 +216,11 @@ if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED
     assert(response == 'OK')
 
 
-if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
-    head_model = tf.keras.models.load_model(cfg.saved_model_path + '/iv3_head_model_%d' % (split_layer), compile=False)
+if(test_number in [test.SPLIT_LAYER, test.SPLIT_LAYER_ZLIB]):
+    model_path = cfg.saved_model_path + '/iv3_head_model_%d' % (split_layer)
+    Logger.event_print("Loading model : from %s" % (model_path))
+    head_model = tf.keras.models.load_model(model_path, compile=False)
+    print("Finished loading")
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
     send_json_dict['model'] = 'tail_model'
@@ -236,13 +241,27 @@ if(test_number in [test.SPLIT_LAYER_3, test.SPLIT_LAYER_3_ZLIB]):
 # In[ ]:
 
 
+def preprocess_image(image):
+    image = tf.squeeze(image,[0])
+    image = tf.image.resize(image, (image_size, image_size))
+    image = tf.cast(image, tf.float32)
+    image /= 127.5
+    image -= 1.
+    image = tf.expand_dims(image, 0)
+    return image
+
+
+# In[ ]:
+
+
 # @tf.function
 def handle_test_STANDALONE(sample_img_batch, img_path):
-    # print(ground_truth)
+    sample_img_batch = preprocess_image(sample_img_batch)
+    
     features, result = model(sample_img_batch)
 
     reshape_layer_size = get_reshape_size(image_size)
-    features = tf.reshape(features, [sample_img_batch.shape[0],reshape_layer_size*reshape_layer_size, 2048])
+    features = tf.reshape(features, [sample_img_batch.shape[0], reshape_layer_size*reshape_layer_size, 2048])
     caption_tensor = captionModel.evaluate(features)
 
     tk.logInfo(img_path, tk.I_BUFFER_SIZE, 0)
@@ -261,47 +280,50 @@ def handle_test_STANDALONE(sample_img_batch, img_path):
 # In[ ]:
 
 
-def handle_test_JPEG_TRANSFER(file_name):
-    with open('/home/suphale/snehal_bucket/coco/raw-data/val2017/'+ file_name, 'rb') as file_t:
-        byte_buffer_to_send = bytearray(file_t.read())
-        send_json_dict = {}
-        send_json_dict['data_type'] = 'file'
-        send_json_dict['file_name'] = file_name
-        send_json_dict['data_size'] = (len(byte_buffer_to_send))
-        send_json_dict['data_shape'] = "(%d,)" % (len(byte_buffer_to_send))
-        send_json_dict['image_size'] = image_size
-        # send_json_dict['data_buffer'] = blob_data
+def handle_test_JPEG_TRANSFER(sample_img_batch, file_name):
+    image = tf.squeeze(sample_img_batch,[0]) 
+    image_tensor = tf.io.encode_jpeg(image)
+    byte_buffer_to_send = image_tensor.numpy()
 
-        app_json = json.dumps(send_json_dict)
+    send_json_dict = {}
+    send_json_dict['data_type'] = 'file'
+    send_json_dict['org_image_size_x'] = int(tf.shape(image)[0].numpy())
+    send_json_dict['org_image_size_y'] = int(tf.shape(image)[1].numpy())
+    send_json_dict['org_image_size_z'] = int(tf.shape(image)[2].numpy())
+    send_json_dict['file_name'] = file_name
+    send_json_dict['data_size'] = (len(byte_buffer_to_send))
+    send_json_dict['data_shape'] = "(%d,)" % (len(byte_buffer_to_send))
+    send_json_dict['image_size'] = image_size
 
-        tk.logInfo(img_path, tk.I_BUFFER_SIZE, len(byte_buffer_to_send))
+    app_json = json.dumps(send_json_dict)
 
-        tk.logTime(img_path, tk.E_START_COMMUNICATION)
+    tk.logInfo(img_path, tk.I_BUFFER_SIZE, len(byte_buffer_to_send))
 
-        response = client.send_data(str(app_json), byte_buffer_to_send)
+    tk.logTime(img_path, tk.E_START_COMMUNICATION)
 
-        tk.logTime(img_path, tk.E_STOP_COMMUNICATION)
+    response = client.send_data(str(app_json), byte_buffer_to_send)
 
-        response = json.loads(response)
+    tk.logTime(img_path, tk.E_STOP_COMMUNICATION)
 
-        predictions = response['predictions']
-        predictions_prob = response['predictions_prob']
-        caption_tensor = response['predicted_captions']
-        # predictions = pickle.loads(predictions)
-        tail_model_time = response['tail_model_time']
-        tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, tail_model_time)
+    response = json.loads(response)
 
-        return predictions, predictions_prob, caption_tensor
+    predictions = response['predictions']
+    predictions_prob = response['predictions_prob']
+    caption_tensor = response['predicted_captions']
+    tail_model_time = response['tail_model_time']
+    tk.logInfo(img_path, tk.I_TAIL_MODEL_TIME, tail_model_time)
+
+    return predictions, predictions_prob, caption_tensor
 
 
 # In[ ]:
 
 
-def handle_test_DECODED_IMAGE_TRANSFER(image_tensor,file_name, zlib_compression=False):
-    # image_tensor = read_image(file_name)
-    # image_tensor = tf.expand_dims(image_tensor, 0) 
+def handle_test_DECODED_IMAGE_TRANSFER(sample_img_batch,file_name, zlib_compression=False):
+    sample_img_batch = preprocess_image(sample_img_batch)
+    image_tensor = tf.squeeze(sample_img_batch,[0]) 
 
-    image_np_array = image_tensor.numpy()
+    image_np_array = sample_img_batch.numpy()
 
     byte_buffer_to_send = image_np_array.tobytes()
     if(zlib_compression == True):
@@ -344,10 +366,10 @@ def handle_test_DECODED_IMAGE_TRANSFER(image_tensor,file_name, zlib_compression=
 # In[ ]:
 
 
-def handle_test_SPLIT_LAYER_3(image_tensor,file_name, zlib_compression=False):
+def handle_test_SPLIT_LAYER(sample_img_batch,file_name, zlib_compression=False):
 
-    # temp_input = tf.expand_dims(read_image(file_name), 0) 
-    intermediate_tensor = head_model(image_tensor)
+    sample_img_batch = preprocess_image(sample_img_batch)
+    intermediate_tensor = head_model(sample_img_batch)
     image_np_array = intermediate_tensor.numpy()
 
     byte_buffer_to_send = image_np_array.tobytes()
@@ -391,12 +413,6 @@ def handle_test_SPLIT_LAYER_3(image_tensor,file_name, zlib_compression=False):
 # In[ ]:
 
 
-
-
-
-# In[ ]:
-
-
 ds_val, ds_info = tfds.load(name="coco/2017", split=split_val, data_dir=data_dir, shuffle_files=False, download=False, with_info=True)
 ds_val = ds_val.map(functools.partial(my_preprocess), num_parallel_calls=tf.data.experimental.AUTOTUNE)
 ds_val = ds_val.map(expand_dims_for_single_batch, num_parallel_calls=tf.data.experimental.AUTOTUNE)
@@ -410,6 +426,9 @@ count = 0
 max_test_images = max_tests
 
 # coco_image_dir = '/home/suphale/snehal_bucket/coco/raw-data/val2017/'
+
+# df_result = pd.from_csv(cfg.temp_path + '/temp/results.csv')
+
 
 total_time = 0.0
 
@@ -429,22 +448,19 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
         ground_truth = tf.squeeze(ground_truth,[0])
 
     ground_truth = list(set(ground_truth.numpy()))
-    # print(ground_truth)
-
-    # accuracy, top_1_accuracy,top_5_accuracy,precision,recall, top_predictions, predictions_str = process_predictions(sample_img_batch, ground_truth)
 
     if(test_number == test.STANDALONE):
         predictions,predictions_prob, caption_tensor = handle_test_STANDALONE(sample_img_batch, img_path)
     if(test_number == test.JPEG_TRANSFER):
-        predictions,predictions_prob, caption_tensor = handle_test_JPEG_TRANSFER(img_path)
+        predictions,predictions_prob, caption_tensor = handle_test_JPEG_TRANSFER(sample_img_batch, img_path)
     if(test_number == test.DECODED_IMAGE_TRANSFER):
         predictions,predictions_prob, caption_tensor = handle_test_DECODED_IMAGE_TRANSFER(sample_img_batch, img_path)
     if(test_number == test.DECODED_IMAGE_TRANSFER_ZLIB):
         predictions,predictions_prob, caption_tensor = handle_test_DECODED_IMAGE_TRANSFER(sample_img_batch, img_path,zlib_compression=True)
-    if(test_number == test.SPLIT_LAYER_3):
-        predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER_3(sample_img_batch, img_path)
-    if(test_number == test.SPLIT_LAYER_3_ZLIB):
-        predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER_3(sample_img_batch, img_path,zlib_compression=True)
+    if(test_number == test.SPLIT_LAYER):
+        predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER(sample_img_batch, img_path)
+    if(test_number == test.SPLIT_LAYER_ZLIB):
+        predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER(sample_img_batch, img_path,zlib_compression=True)
 
     tk.logTime(img_path, tk.E_STOP_CLIENT_PROCESSING)
 
@@ -468,12 +484,13 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
         },
         ignore_index = True)
     truth_str = ' '.join([str(elem) for elem in imagesInfo.get_segmentation_texts(ground_truth)])
-    # print("real_caption  : %s" % (real_caption))
-    # print("pred_caption  : %s" % (pred_caption))
 
     tk.finishRecord(img_path)
 
-df.to_csv(cfg.temp_path + '/results_'+cfg.timestr+'.csv')
+fname = cfg.temp_path + '/results/test_%d_i_%d_s_%d.csv' % (test_number, image_size, split_layer)
+os.makedirs(os.path.dirname(fname),exist_ok=True)
+
+df.to_csv(fname)
 
 print(df['real_caption'].iloc[0])
 print(df['pred_caption'].iloc[0])
@@ -499,7 +516,56 @@ tk.summary()
 # In[ ]:
 
 
+fname = cfg.temp_path + '/results/results.csv'
+if(os.path.isfile(fname) == True):
+    df_result = pd.read_csv(fname,dtype={
+                     'test_number': int,
+                     'image_size': int,
+                     'split_layer': int,
+                     'accuracy': float,
+                     'top_1_accuracy': float,
+                     'top_5_accuracy': float,
+                     'precision': float,
+                     'recall': float,
+                     'BLEU': float,
+                     'total_time': float,
+                     'head_time': float,
+                     'network_time': float,
+                     'tail_time': float,
+                     'nw_payload': float})
+else:
+    print("File %s not found" % fname)
+    df_result = pd.DataFrame(columns=[  'test_number',
+                                        'image_size',
+                                        'split_layer',
+                                        'accuracy', 
+                                        'top_1_accuracy', 
+                                        'top_5_accuracy', 
+                                        'precision', 
+                                        'recall', 
+                                        'BLEU', 
+                                        'total_time',
+                                        'head_time',
+                                        'network_time',
+                                        'tail_time',
+                                        'nw_payload'])
 
+new_row = { 'test_number': test_number,
+            'image_size': image_size,
+            'split_layer': split_layer,
+            'accuracy': float(av_column.accuracy),
+            'top_1_accuracy': float(av_column.top_1_accuracy),
+            'top_5_accuracy': float(av_column.top_5_accuracy),
+            'precision': float(av_column.precision),
+            'recall': float(av_column.recall),
+            'BLEU': float(av_column.BLEU),
+            'total_time': float(tk.get_average_inference_time()),
+            'head_time': float(tk.get_average_head_model_time()),
+            'network_time': float(tk.get_average_communication_time()),
+            'tail_time': float(tk.get_average_tail_model_time()),
+            'nw_payload': float(tk.get_average_communication_payload())}
+df_result = df_result.append(new_row, ignore_index=True)
+df_result.to_csv(fname,index = False)
 
 
 # In[ ]:
@@ -513,22 +579,4 @@ tk.summary()
 
 Test = False
 # if (Test == True):
-
-
-# In[ ]:
-
-
-# imagesInfo.annotations_dict
-
-
-# In[ ]:
-
-
-# model.save(cfg.temp_path + '/extractor_model')
-
-
-# In[ ]:
-
-
-
 

@@ -49,16 +49,32 @@ class TimeKeeper:
 
     def summary(self):
         df = pd.DataFrame(self.records)
-        df_t = df.T
+        self.df_t = df.T
         
         # df_t.to_csv("TimeKeeper.csv")
-        average_inference_time = df_t[self.I_CLIENT_PROCESSING_TIME].mean()
-        average_head_model_time = df_t[self.I_CLIENT_PROCESSING_TIME].mean() - df_t[self.I_COMMUNICATION_TIME].mean()
-        average_communication_time = df_t[self.I_COMMUNICATION_TIME].mean() - df_t[self.I_TAIL_MODEL_TIME].mean()
-        average_tail_model_time = df_t[self.I_TAIL_MODEL_TIME].mean()
-        average_communication_payload = int(df_t[self.I_BUFFER_SIZE].mean())
+        average_inference_time = self.get_average_inference_time()
+        average_head_model_time = self.get_average_head_model_time()
+        average_communication_time = self.get_average_communication_time()
+        average_tail_model_time = self.get_average_tail_model_time()
+        average_communication_payload = self.get_average_communication_payload()
         Logger.milestone_print("Avg total time  : %.2f s" % (average_inference_time))
         Logger.milestone_print("Avg head time   : %.2f s" % (average_head_model_time))
         Logger.milestone_print("Avg network time: %.2f s" % (average_communication_time))
         Logger.milestone_print("Avg tail time   : %.2f s" % (average_tail_model_time))
         Logger.milestone_print("Avg nw payload  : " + f"{int(average_communication_payload):,d}")
+
+    def get_average_inference_time(self):
+        return self.df_t[self.I_CLIENT_PROCESSING_TIME].mean()
+
+    def get_average_head_model_time(self):
+        return self.df_t[self.I_CLIENT_PROCESSING_TIME].mean() - self.df_t[self.I_COMMUNICATION_TIME].mean()
+
+    def get_average_communication_time(self):
+        return self.df_t[self.I_COMMUNICATION_TIME].mean() - self.df_t[self.I_TAIL_MODEL_TIME].mean()
+
+    def get_average_tail_model_time(self):
+        return self.df_t[self.I_TAIL_MODEL_TIME].mean()
+
+    def get_average_communication_payload(self):
+        return self.df_t[self.I_BUFFER_SIZE].mean()
+

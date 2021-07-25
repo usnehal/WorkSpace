@@ -14,11 +14,13 @@ fi
 TESTS=" -m 50"
 VERBOSE=" -v 0"
 
-cd ~/WorkSpace/       
-python3 ./client.py $SERVER -t 0 $VERBOSE $TESTS
-python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS
+cd ~/WorkSpace/
+rm ./temp/results/results.csv 
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 100
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 250
 python3 ./client.py $SERVER -t 2 $VERBOSE $TESTS
 python3 ./client.py $SERVER -t 3 $VERBOSE $TESTS
-python3 ./client.py $SERVER -t 4 $VERBOSE $TESTS --split_layer 40
-python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 100
+python3 ./client.py $SERVER -t 4 $VERBOSE $TESTS
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 40
+python3 ./client.py $SERVER -t 6 $VERBOSE $TESTS --split_layer 100
 

@@ -7,7 +7,7 @@
 #!/usr/bin/env python3
 
 
-# In[ ]:
+# In[1]:
 
 
 import os
@@ -35,7 +35,7 @@ from common.helper import read_image, filt_text, get_predictions, get_reshape_si
 from CaptionModel import CaptionModel
 
 
-# In[ ]:
+# In[2]:
 
 
 class TailModel:
@@ -48,7 +48,7 @@ class TailModel:
         return result
 
 
-# In[ ]:
+# In[3]:
 
 
 model = None
@@ -62,6 +62,7 @@ def handle_load_model(msg,model_path_requested):
         Logger.milestone_print("Loading model : from %s" % (model_path))
         model = None
         model = tf.keras.models.load_model(model_path, compile=False)
+        print("finished loading")
         # model = tf.keras.models.load_model(cfg.temp_path + '/extractor_model', compile=False)
         return "OK"
     if(msg == 'captionModel'):
@@ -69,25 +70,26 @@ def handle_load_model(msg,model_path_requested):
         captionModel = None
         Logger.milestone_print("Loading caption model : from %s" % (model_path))
         captionModel = CaptionModel(model_path=model_path)
+        print("finished loading")
         return "OK"
     if(msg == 'tail_model'):
         model_path = cfg.saved_model_path + "/" + model_path_requested
         Logger.milestone_print("Loading model : from %s" % (model_path))
         model = None
         model = tf.keras.models.load_model(model_path, compile=False)
+        print("finished loading")
         return "OK"
 
 
 # In[ ]:
 
 
-def handle_image_file(msg,shape,image_size):
+def handle_image_file(msg,shape,image_size,org_image_size=None):
+    print(tf.shape(msg))
     temp_file = '/tmp/temp.bin'
     f = open(temp_file, "wb")
     f.write(msg)
     f.close()
-
-    # print("image_size=%d" %(image_size))
 
     t0 = time.perf_counter()
     image_tensor = tf.expand_dims(read_image(temp_file, height=image_size, width=image_size), 0) 
@@ -115,7 +117,7 @@ def handle_image_file(msg,shape,image_size):
 # In[ ]:
 
 
-def handle_image_tensor(msg,shape,image_size):
+def handle_image_tensor(msg,shape,image_size,org_image_size=None):
     generated_np_array = np.frombuffer(msg, dtype=float32)
     generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
     generated_image_np_array = generated_np_array.reshape(shape)
