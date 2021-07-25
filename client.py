@@ -81,12 +81,12 @@ if(test_number == 6):
     test_number = test.SPLIT_LAYER_ZLIB
 
 test_scenarios = {  
-        test.STANDALONE:                    "standalone processing at client device", 
-        test.JPEG_TRANSFER:                 "Complete jpg file buffer transfer", 
-        test.DECODED_IMAGE_TRANSFER:        "Decoded image buffer transfer",
-        test.DECODED_IMAGE_TRANSFER_ZLIB:   "Decoded image buffer transfer with zlib compression",
-        test.SPLIT_LAYER:                 "split model at layer 3",
-        test.SPLIT_LAYER_ZLIB:            "split model at layer 3 with zlib compression",
+        test.STANDALONE:                    "Complete on-device processing", 
+        test.JPEG_TRANSFER:                 "Frame buffer transfer with jpeg compression", 
+        test.DECODED_IMAGE_TRANSFER:        "Frame buffer transfer",
+        test.DECODED_IMAGE_TRANSFER_ZLIB:   "Frame transfer with zlib compression",
+        test.SPLIT_LAYER:                   "split model intermediate tensor transfer",
+        test.SPLIT_LAYER_ZLIB:              "split model intermediate tensor transfer with zlib compression",
         }
 
 if(image_size == None):
