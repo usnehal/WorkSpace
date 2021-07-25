@@ -1,1 +1,0 @@
-Test scenario   : 0 standalone processing at client deviceImage shape     : (299 299)Max tests       : 50accuracy        : 0.50top_1_accuracy  : 0.80top_5_accuracy  : 0.82precision       : 0.64recall          : 0.50time            : 0.00Avg total time  : 0.43 sAvg head time   : 0.43 sAvg network time: 0.00 sAvg tail time   : 0.00 sAvg nw payload  : 0
