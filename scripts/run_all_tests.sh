@@ -11,7 +11,7 @@ else
   SERVER=" -s $IP"
 fi
 
-TESTS=" -m 50"
+TESTS=" -m 100"
 VERBOSE=" -v 0"
 
 cd ~/WorkSpace/
@@ -26,7 +26,20 @@ python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 400
 python3 ./client.py $SERVER -t 2 $VERBOSE $TESTS
 python3 ./client.py $SERVER -t 3 $VERBOSE $TESTS
 python3 ./client.py $SERVER -t 4 $VERBOSE $TESTS
+
 python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 3
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 40
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 63
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 86
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 100
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 132
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 164
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 196
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 228
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 248
+python3 ./client.py $SERVER -t 5 $VERBOSE $TESTS --split_layer 279
+
+python3 ./client.py $SERVER -t 6 $VERBOSE $TESTS --split_layer 3
 python3 ./client.py $SERVER -t 6 $VERBOSE $TESTS --split_layer 40
 python3 ./client.py $SERVER -t 6 $VERBOSE $TESTS --split_layer 63
 python3 ./client.py $SERVER -t 6 $VERBOSE $TESTS --split_layer 86

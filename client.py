@@ -141,6 +141,8 @@ split_val = "validation[:20%]"
 Logger.milestone_print("Test scenario   : [%d] %s" % (test_number, test_scenarios[test_number]))
 Logger.milestone_print("Image shape     : (%d %d)" % (image_size, image_size))
 Logger.milestone_print("Max tests       : %d" % (max_tests))
+if ((test_number == test.SPLIT_LAYER) or (test_number == test.SPLIT_LAYER_ZLIB)):
+    Logger.milestone_print("split layer     : [%d]" % (split_layer))
 
 
 # In[ ]:
