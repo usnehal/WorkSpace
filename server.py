@@ -85,7 +85,7 @@ def handle_load_model(msg,model_path_requested):
 
 
 def handle_image_file(msg,shape,image_size,org_image_size=None):
-    print(tf.shape(msg))
+    #print(tf.shape(msg))
     temp_file = '/tmp/temp.bin'
     f = open(temp_file, "wb")
     f.write(msg)
