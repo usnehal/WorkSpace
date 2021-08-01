@@ -79,12 +79,14 @@ if(split_layer == None):
     split_layer = 3
 
 test_scenarios = {  
-        test.STANDALONE:                "Complete on-device processing", 
-        test.RGB_IMAGE_TRANSFER:        "RGB Frame buffer transfer",
-        test.RGB_IMAGE_TRANSFER_ZLIB:   "RGB Frame transfer with zlib compression",
-        test.JPEG_TRANSFER:             "Image transfer with jpeg compression", 
-        test.SPLIT_LAYER:               "split model intermediate tensor transfer",
-        test.SPLIT_LAYER_ZLIB:          "split model intermediate tensor transfer with zlib compression",
+        test.STANDALONE:                 "complete on-device processing", 
+        test.RGB_IMAGE_TRANSFER:         "RGB buffer transfer",
+        test.RGB_IMAGE_TRANSFER_ZLIB:    "RGB buffer with zlib compression",
+        test.JPEG_TRANSFER:              "image buffer with jpeg compression", 
+        test.SPLIT_LAYER:                "split model, intermediate tensor",
+        test.SPLIT_LAYER_ZLIB:           "split model, intermediate tensor, zlib compression",
+        test.SPLIT_LAYER_QUANTIZED:      "split model, intermediate tensor, quantized",
+        test.SPLIT_LAYER_QUANTIZED_ZLIB: "split model, intermediate tensor, quantized with zlib compression",
         }
 
 # test_number = 2
@@ -102,6 +104,10 @@ elif(test_number == 5):
     test_number = test.SPLIT_LAYER
 elif(test_number == 6):
     test_number = test.SPLIT_LAYER_ZLIB
+elif(test_number == 7):
+    test_number = test.SPLIT_LAYER_QUANTIZED
+elif(test_number == 8):
+    test_number = test.SPLIT_LAYER_QUANTIZED_ZLIB
 else:
     print(test_scenarios)
 
@@ -235,7 +241,7 @@ if(test_number in [test.JPEG_TRANSFER, test.RGB_IMAGE_TRANSFER, test.RGB_IMAGE_T
     assert(response == 'OK')
 
 
-if(test_number in [test.SPLIT_LAYER, test.SPLIT_LAYER_ZLIB]):
+if(test_number in [test.SPLIT_LAYER, test.SPLIT_LAYER_ZLIB, test.SPLIT_LAYER_QUANTIZED ,test.SPLIT_LAYER_QUANTIZED_ZLIB]):
     model_path = cfg.saved_model_path + '/iv3_head_model_%d' % (split_layer)
     Logger.event_print("Loading model : from %s" % (model_path))
     head_model = tf.keras.models.load_model(model_path, compile=False)
@@ -378,17 +384,20 @@ def handle_test_RGB_IMAGE_TRANSFER(sample_img_batch,file_name, zlib_compression=
 # In[ ]:
 
 
-def handle_test_SPLIT_LAYER(sample_img_batch,file_name, zlib_compression=False):
+import pprint
+
+def handle_test_SPLIT_LAYER(sample_img_batch,file_name, quantized=False, zlib_compression=False):
 
     sample_img_batch = preprocess_image(sample_img_batch)
     intermediate_tensor = head_model(sample_img_batch)
-    image_np_array = intermediate_tensor.numpy()
-
+    if(quantized == True):
+        image_np_array = tf.cast(intermediate_tensor, dtype=tf.int8).numpy()
+    else:
+        image_np_array = intermediate_tensor.numpy()
     byte_buffer_to_send = image_np_array.tobytes()
+
     if(zlib_compression == True):
         byte_buffer_to_send = zlib.compress(byte_buffer_to_send)
-
-    type(byte_buffer_to_send)
 
     send_json_dict = {}
     send_json_dict['request'] = 'intermediate_tensor'
@@ -400,6 +409,10 @@ def handle_test_SPLIT_LAYER(sample_img_batch,file_name, zlib_compression=False):
         send_json_dict['zlib_compression'] = 'yes'
     else:
         send_json_dict['zlib_compression'] = 'no'
+    if(quantized == True):
+        send_json_dict['quantized'] = 'yes'
+    else:
+        send_json_dict['quantized'] = 'no'
 
     app_json = json.dumps(send_json_dict)
 
@@ -473,6 +486,10 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
         predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER(sample_img_batch, img_path)
     if(test_number == test.SPLIT_LAYER_ZLIB):
         predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER(sample_img_batch, img_path,zlib_compression=True)
+    if(test_number == test.SPLIT_LAYER_QUANTIZED):
+        predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER(sample_img_batch, img_path, quantized=True)
+    if(test_number == test.SPLIT_LAYER_QUANTIZED_ZLIB):
+        predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER(sample_img_batch, img_path, quantized=True, zlib_compression=True)
 
     tk.logTime(img_path, tk.E_STOP_CLIENT_PROCESSING)
 

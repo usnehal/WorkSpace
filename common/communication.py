@@ -131,10 +131,15 @@ class Server:
             Logger.debug_print ('response:' + response)
         else:
             tensor_shape = obj['data_shape']
+            zlib_compression = False
             if 'zlib_compression' in obj.keys():
-                zlib_compression = obj['zlib_compression']
-            else:
-                zlib_compression = False
+                if(obj['zlib_compression'] == 'yes'):
+                    zlib_compression = True
+
+            quantized = False
+            if 'quantized' in obj.keys():
+                if(obj['quantized'] == 'yes'):
+                    quantized = True
 
             reshape_image_size = obj['reshape_image_size']
             Logger.debug_print("handle_client:sending OK")
@@ -158,13 +163,10 @@ class Server:
             
             Logger.debug_print('total size of msg=%d' % (len(msg)))
             
-            if(zlib_compression == 'yes'):
-                msg = zlib.decompress(msg)
-
             response = ''
             if request in self.callbacks :
                 callback = self.callbacks[request]
-                response = callback(msg,tensor_shape,reshape_image_size)
+                response = callback(msg,tensor_shape,reshape_image_size,quantized,zlib_compression)
 
             Logger.debug_print("handle_client:sending pred_caption" + response)
             c.send(response.encode())

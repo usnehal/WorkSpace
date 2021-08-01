@@ -93,7 +93,7 @@ def handle_load_model(msg,model_path_requested):
 # In[ ]:
 
 
-def handle_image_file(msg,shape,reshape_image_size):
+def handle_image_file(msg,shape,reshape_image_size,quantized=False,zlib_compression=False):
     temp_file = '/tmp/temp.bin'
     f = open(temp_file, "wb")
     f.write(msg)
@@ -138,14 +138,16 @@ def preprocess_image(image,reshape_image_size):
 # In[ ]:
 
 
-def handle_rgb_buffer(msg,shape,reshape_image_size):
+def handle_rgb_buffer(msg,shape,reshape_image_size,quantized=False,zlib_compression=False):
+    t0 = time.perf_counter()
+    if(zlib_compression == 'yes'):
+        msg = zlib.decompress(msg)
     generated_np_array = np.frombuffer(msg, dtype=float32)
     generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
     generated_image_np_array = generated_np_array.reshape(shape)
     image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
     image_tensor = preprocess_image(image_tensor,reshape_image_size)
 
-    t0 = time.perf_counter()
     features, result = model(image_tensor)
     features = tf.reshape(features, [1,get_reshape_size(reshape_image_size)*get_reshape_size(reshape_image_size), 2048])
     caption_tensor = captionModel.evaluate(features)
@@ -168,13 +170,24 @@ def handle_rgb_buffer(msg,shape,reshape_image_size):
 # In[ ]:
 
 
-def handle_image_tensor(msg,shape,reshape_image_size):
-    generated_np_array = np.frombuffer(msg, dtype=float32)
-    generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
-    generated_image_np_array = generated_np_array.reshape(shape)
-    image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
-
+def handle_image_tensor(msg,shape,reshape_image_size,quantized=False,zlib_compression=False):
     t0 = time.perf_counter()
+    if(zlib_compression == True):
+        msg = zlib.decompress(msg)
+    if(quantized == True):
+        generated_np_array = np.frombuffer(msg, dtype=np.uint8)
+        # generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
+        # generated_image_np_array = generated_np_array.reshape(shape)
+        y = tf.bitcast(generated_np_array, tf.uint8)
+        image_tensor = tf.cast(y, tf.float32)
+        image_tensor = tf.reshape(image_tensor,shape )
+        # image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
+    else:
+        generated_np_array = np.frombuffer(msg, dtype=float32)
+        generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
+        generated_image_np_array = generated_np_array.reshape(shape)
+        image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
+
     features, result = model(image_tensor)
     features = tf.reshape(features, [1,get_reshape_size(reshape_image_size)*get_reshape_size(reshape_image_size), 2048])
     caption_tensor = captionModel.evaluate(features)
