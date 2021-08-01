@@ -91,6 +91,7 @@ checkpoints
 saved_model/model
 temp/
 saved_model
+tfrecords
 
 # IPython
 profile_default/
