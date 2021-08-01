@@ -11,8 +11,9 @@ else
   SERVER=" -s $IP"
 fi
 
+DATE_WITH_TIME=`date "+%Y%m%d-%H%M%S"`
 TESTS=" -m 100"
-VERBOSE=" -v 0"
+VERBOSE=" -v 0 -d DATE_WITH_TIME"
 
 cd ~/WorkSpace/
 rm ./temp/results/results.csv 

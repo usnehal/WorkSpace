@@ -84,8 +84,8 @@ def handle_load_model(msg,model_path_requested):
 # In[ ]:
 
 
-def handle_image_file(msg,shape,image_size,org_image_size=None):
-    #print(tf.shape(msg))
+def handle_image_file(msg,shape,image_size,original_image_shape=None):
+    print(tf.shape(msg))
     temp_file = '/tmp/temp.bin'
     f = open(temp_file, "wb")
     f.write(msg)
@@ -117,7 +117,7 @@ def handle_image_file(msg,shape,image_size,org_image_size=None):
 # In[ ]:
 
 
-def handle_image_tensor(msg,shape,image_size,org_image_size=None):
+def handle_image_tensor(msg,shape,image_size,original_image_shape=None):
     generated_np_array = np.frombuffer(msg, dtype=float32)
     generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
     generated_image_np_array = generated_np_array.reshape(shape)

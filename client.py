@@ -43,6 +43,7 @@ from CaptionModel import CaptionModel
 
 
 parser = argparse.ArgumentParser()
+parser.add_argument('-r', '--result_folder', action='store', type=str, required=False)
 parser.add_argument('-s', '--server', action='store', type=str, required=False)
 parser.add_argument('-t', '--test_number', action='store', type=int, required=False)
 parser.add_argument('-l', '--split_layer', action='store', type=int, required=False)
@@ -51,6 +52,7 @@ parser.add_argument('-i', '--image_size', action='store', type=int, required=Fal
 parser.add_argument('-m', '--max_tests', action='store', type=int, required=False)
 args, unknown = parser.parse_known_args()
 
+result_folder = args.result_folder
 server_ip = args.server
 test_number = args.test_number
 verbose = args.verbose
@@ -61,33 +63,38 @@ split_layer = args.split_layer
 if(verbose == None):
     verbose = 1
 
+if(result_folder == None):
+    result_folder = 'temp'
+
 if(split_layer == None):
     split_layer = 3
+
+test_scenarios = {  
+        test.STANDALONE:                "Complete on-device processing", 
+        test.RGB_IMAGE_TRANSFER:        "RGB Frame buffer transfer",
+        test.RGB_IMAGE_TRANSFER_ZLIB:   "RGB Frame transfer with zlib compression",
+        test.JPEG_TRANSFER:             "Image transfer with jpeg compression", 
+        test.SPLIT_LAYER:               "split model intermediate tensor transfer",
+        test.SPLIT_LAYER_ZLIB:          "split model intermediate tensor transfer with zlib compression",
+        }
 
 # test_number = 2
 if(test_number == None):
     test_number = test.STANDALONE
-if(test_number == 1):
+elif(test_number == 1):
     test_number = test.STANDALONE
-if(test_number == 2):
+elif(test_number == 2):
+    test_number = test.RGB_IMAGE_TRANSFER
+elif(test_number == 3):
+    test_number = test.RGB_IMAGE_TRANSFER_ZLIB
+elif(test_number == 4):
     test_number = test.JPEG_TRANSFER
-if(test_number == 3):
-    test_number = test.DECODED_IMAGE_TRANSFER
-if(test_number == 4):
-    test_number = test.DECODED_IMAGE_TRANSFER_ZLIB
-if(test_number == 5):
+elif(test_number == 5):
     test_number = test.SPLIT_LAYER
-if(test_number == 6):
+elif(test_number == 6):
     test_number = test.SPLIT_LAYER_ZLIB
-
-test_scenarios = {  
-        test.STANDALONE:                    "Complete on-device processing", 
-        test.JPEG_TRANSFER:                 "Frame buffer transfer with jpeg compression", 
-        test.DECODED_IMAGE_TRANSFER:        "Frame buffer transfer",
-        test.DECODED_IMAGE_TRANSFER_ZLIB:   "Frame transfer with zlib compression",
-        test.SPLIT_LAYER:                   "split model intermediate tensor transfer",
-        test.SPLIT_LAYER_ZLIB:              "split model intermediate tensor transfer with zlib compression",
-        }
+else:
+    print(test_scenarios)
 
 if(image_size == None):
     image_size = 250
@@ -199,7 +206,7 @@ if(test_number in [test.STANDALONE]):
     #                             model.layers[313].output])
     print("Finished loading")
     captionModel = CaptionModel(image_size=image_size)
-if(test_number in [test.JPEG_TRANSFER, test.DECODED_IMAGE_TRANSFER, test.DECODED_IMAGE_TRANSFER_ZLIB]):
+if(test_number in [test.JPEG_TRANSFER, test.RGB_IMAGE_TRANSFER, test.RGB_IMAGE_TRANSFER_ZLIB]):
     # head_model = tf.keras.models.load_model(cfg.saved_model_path + '/model', compile=False)
     send_json_dict = {}
     send_json_dict['data_type'] = 'load_model_request'
@@ -289,9 +296,9 @@ def handle_test_JPEG_TRANSFER(sample_img_batch, file_name):
 
     send_json_dict = {}
     send_json_dict['data_type'] = 'file'
-    send_json_dict['org_image_size_x'] = int(tf.shape(image)[0].numpy())
-    send_json_dict['org_image_size_y'] = int(tf.shape(image)[1].numpy())
-    send_json_dict['org_image_size_z'] = int(tf.shape(image)[2].numpy())
+    send_json_dict['original_image_shape_width'] = int(tf.shape(image)[0].numpy())
+    send_json_dict['original_image_shape_height'] = int(tf.shape(image)[1].numpy())
+    send_json_dict['original_image_shape_channels'] = int(tf.shape(image)[2].numpy())
     send_json_dict['file_name'] = file_name
     send_json_dict['data_size'] = (len(byte_buffer_to_send))
     send_json_dict['data_shape'] = "(%d,)" % (len(byte_buffer_to_send))
@@ -321,7 +328,7 @@ def handle_test_JPEG_TRANSFER(sample_img_batch, file_name):
 # In[ ]:
 
 
-def handle_test_DECODED_IMAGE_TRANSFER(sample_img_batch,file_name, zlib_compression=False):
+def handle_test_RGB_IMAGE_TRANSFER(sample_img_batch,file_name, zlib_compression=False):
     sample_img_batch = preprocess_image(sample_img_batch)
     image_tensor = tf.squeeze(sample_img_batch,[0]) 
 
@@ -455,10 +462,10 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
         predictions,predictions_prob, caption_tensor = handle_test_STANDALONE(sample_img_batch, img_path)
     if(test_number == test.JPEG_TRANSFER):
         predictions,predictions_prob, caption_tensor = handle_test_JPEG_TRANSFER(sample_img_batch, img_path)
-    if(test_number == test.DECODED_IMAGE_TRANSFER):
-        predictions,predictions_prob, caption_tensor = handle_test_DECODED_IMAGE_TRANSFER(sample_img_batch, img_path)
-    if(test_number == test.DECODED_IMAGE_TRANSFER_ZLIB):
-        predictions,predictions_prob, caption_tensor = handle_test_DECODED_IMAGE_TRANSFER(sample_img_batch, img_path,zlib_compression=True)
+    if(test_number == test.RGB_IMAGE_TRANSFER):
+        predictions,predictions_prob, caption_tensor = handle_test_RGB_IMAGE_TRANSFER(sample_img_batch, img_path)
+    if(test_number == test.RGB_IMAGE_TRANSFER_ZLIB):
+        predictions,predictions_prob, caption_tensor = handle_test_RGB_IMAGE_TRANSFER(sample_img_batch, img_path,zlib_compression=True)
     if(test_number == test.SPLIT_LAYER):
         predictions,predictions_prob, caption_tensor = handle_test_SPLIT_LAYER(sample_img_batch, img_path)
     if(test_number == test.SPLIT_LAYER_ZLIB):
@@ -518,7 +525,10 @@ tk.summary()
 # In[ ]:
 
 
-fname = cfg.temp_path + '/results/results.csv'
+from pathlib import Path
+Path(cfg.temp_path + '/results/' + result_folder).mkdir(parents=True, exist_ok=True)
+
+fname = cfg.temp_path + '/results/' + result_folder + '/results.csv'
 if(os.path.isfile(fname) == True):
     df_result = pd.read_csv(fname,dtype={
                      'test_number': int,
