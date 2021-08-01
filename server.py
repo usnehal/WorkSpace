@@ -140,7 +140,7 @@ def preprocess_image(image,reshape_image_size):
 
 def handle_rgb_buffer(msg,shape,reshape_image_size,quantized=False,zlib_compression=False):
     t0 = time.perf_counter()
-    if(zlib_compression == 'yes'):
+    if(zlib_compression == True):
         msg = zlib.decompress(msg)
     generated_np_array = np.frombuffer(msg, dtype=float32)
     generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
