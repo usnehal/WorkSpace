@@ -24,7 +24,7 @@ TESTS=" -m 100"
 VERBOSE=" -v 0 -r $DATE_WITH_TIME "
 
 cd ~/WorkSpace/
-rm ./temp/results/results.csv 
+rm -rf ./temp/results/results.csv 
 
 python3 ./client.py $SERVER -t 2 $VERBOSE $TESTS
 python3 ./client.py $SERVER -t 3 $VERBOSE $TESTS
