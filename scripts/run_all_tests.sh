@@ -16,13 +16,6 @@ VERBOSE=" -v 0"
 
 cd ~/WorkSpace/
 rm ./temp/results/results.csv 
-python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 100
-python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 150
-python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 200
-python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 250
-python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 300
-python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 350
-python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 400
 
 python3 ./client.py $SERVER -t 2 $VERBOSE $TESTS
 python3 ./client.py $SERVER -t 3 $VERBOSE $TESTS
@@ -196,3 +189,10 @@ python3 ./client.py $SERVER -t 6 $VERBOSE $TESTS --image_size 400 --split_layer 
 python3 ./client.py $SERVER -t 6 $VERBOSE $TESTS --image_size 400 --split_layer 248
 python3 ./client.py $SERVER -t 6 $VERBOSE $TESTS --image_size 400 --split_layer 279
 
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 100
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 150
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 200
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 250
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 300
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 350
+python3 ./client.py $SERVER -t 1 $VERBOSE $TESTS --image_size 400
