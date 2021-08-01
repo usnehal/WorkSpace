@@ -25,6 +25,8 @@ import time
 import zlib
 import pickle5 as pickle
 
+tf.get_logger().setLevel('ERROR')
+
 from common.config import Config
 from common.logger import Logger
 from common.communication import Client
@@ -46,6 +48,13 @@ class TailModel:
     def evaluate(self,image):
         result = self.model(image)
         return result
+
+
+# In[ ]:
+
+
+# tf.get_logger().setLevel('ERROR')
+tf.get_logger().setLevel('ERROR')
 
 
 # In[3]:
@@ -84,17 +93,16 @@ def handle_load_model(msg,model_path_requested):
 # In[ ]:
 
 
-def handle_image_file(msg,shape,image_size,original_image_shape=None):
-    print(tf.shape(msg))
+def handle_image_file(msg,shape,reshape_image_size):
     temp_file = '/tmp/temp.bin'
     f = open(temp_file, "wb")
     f.write(msg)
     f.close()
 
     t0 = time.perf_counter()
-    image_tensor = tf.expand_dims(read_image(temp_file, height=image_size, width=image_size), 0) 
+    image_tensor = tf.expand_dims(read_image(temp_file, height=reshape_image_size, width=reshape_image_size), 0) 
     features, result = model(image_tensor)
-    reshape_size = get_reshape_size(image_size)
+    reshape_size = get_reshape_size(reshape_image_size)
     # print("reshape_size=%d" %(reshape_size))
     features = tf.reshape(features, [1, reshape_size*reshape_size, 2048])
     caption_tensor = captionModel.evaluate(features)
@@ -117,7 +125,50 @@ def handle_image_file(msg,shape,image_size,original_image_shape=None):
 # In[ ]:
 
 
-def handle_image_tensor(msg,shape,image_size,original_image_shape=None):
+def preprocess_image(image,reshape_image_size):
+    image = tf.squeeze(image,[0])
+    image = tf.image.resize(image, (reshape_image_size, reshape_image_size))
+    image = tf.cast(image, tf.float32)
+    image /= 127.5
+    image -= 1.
+    image = tf.expand_dims(image, 0)
+    return image
+
+
+# In[ ]:
+
+
+def handle_rgb_buffer(msg,shape,reshape_image_size):
+    generated_np_array = np.frombuffer(msg, dtype=float32)
+    generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
+    generated_image_np_array = generated_np_array.reshape(shape)
+    image_tensor = tf.convert_to_tensor(generated_image_np_array, dtype=tf.float32)
+    image_tensor = preprocess_image(image_tensor,reshape_image_size)
+
+    t0 = time.perf_counter()
+    features, result = model(image_tensor)
+    features = tf.reshape(features, [1,get_reshape_size(reshape_image_size)*get_reshape_size(reshape_image_size), 2048])
+    caption_tensor = captionModel.evaluate(features)
+    t1 = time.perf_counter() - t0
+
+    top_predictions, predictions_prob = get_predictions(cfg, result)
+
+    send_json_dict = {}
+    send_json_dict['response'] = 'OK'
+    send_json_dict['predictions'] = top_predictions
+    send_json_dict['predictions_prob'] = predictions_prob
+    send_json_dict['predicted_captions'] = caption_tensor
+    send_json_dict['tail_model_time'] = t1
+
+    app_json = json.dumps(send_json_dict)
+
+    return str(app_json)
+
+
+# In[ ]:
+
+
+def handle_image_tensor(msg,shape,reshape_image_size):
     generated_np_array = np.frombuffer(msg, dtype=float32)
     generated_np_array = np.frombuffer(generated_np_array, dtype=float32)
     generated_image_np_array = generated_np_array.reshape(shape)
@@ -125,7 +176,7 @@ def handle_image_tensor(msg,shape,image_size,original_image_shape=None):
 
     t0 = time.perf_counter()
     features, result = model(image_tensor)
-    features = tf.reshape(features, [1,get_reshape_size(image_size)*get_reshape_size(image_size), 2048])
+    features = tf.reshape(features, [1,get_reshape_size(reshape_image_size)*get_reshape_size(reshape_image_size), 2048])
     caption_tensor = captionModel.evaluate(features)
     t1 = time.perf_counter() - t0
 
@@ -159,9 +210,10 @@ imagesInfo = ImagesInfo(cfg)
 
 tailModel = TailModel(cfg)
 server = Server(cfg)
-server.register_callback('data',handle_image_tensor)
-server.register_callback('file',handle_image_file)
 server.register_callback('load_model_request',handle_load_model)
+server.register_callback('rgb_buffer',handle_rgb_buffer)
+server.register_callback('intermediate_tensor',handle_image_tensor)
+server.register_callback('jpeg_buffer',handle_image_file)
 server.accept_connections()
 
 

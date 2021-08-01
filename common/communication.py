@@ -114,15 +114,15 @@ class Server:
         Logger.debug_print("handle_client:received_data="+received_data)
         obj = json.loads(received_data)
         Logger.debug_print(obj)
-        data_type = obj['data_type']
-        if(data_type == 'load_model_request'):
+        request = obj['request']
+        if(request == 'load_model_request'):
             model_type = obj['model']
             model_path = None
             if('model_path' in obj.keys()):
                 model_path = obj['model_path']
             response = ''
-            if data_type in self.callbacks :
-                callback = self.callbacks[data_type]
+            if request in self.callbacks :
+                callback = self.callbacks[request]
                 response = callback(model_type,model_path)
 
             Logger.debug_print("handle_client:sending pred_caption" + response)
@@ -136,14 +136,7 @@ class Server:
             else:
                 zlib_compression = False
 
-            original_image_shape = None
-            if 'original_image_shape_width' in obj.keys():
-                x = obj['original_image_shape_width']
-                y = obj['original_image_shape_height']
-                z = obj['original_image_shape_channels']
-                original_image_shape = [x,y,z]
-
-            image_size = obj['image_size']
+            reshape_image_size = obj['reshape_image_size']
             Logger.debug_print("handle_client:sending OK")
             c.send("OK".encode())
 
@@ -169,9 +162,9 @@ class Server:
                 msg = zlib.decompress(msg)
 
             response = ''
-            if data_type in self.callbacks :
-                callback = self.callbacks[data_type]
-                response = callback(msg,tensor_shape,image_size,original_image_shape)
+            if request in self.callbacks :
+                callback = self.callbacks[request]
+                response = callback(msg,tensor_shape,reshape_image_size)
 
             Logger.debug_print("handle_client:sending pred_caption" + response)
             c.send(response.encode())

@@ -27,6 +27,9 @@ import pandas as pd
 from tqdm import tqdm
 import  tensorflow_datasets as tfds
 import  functools
+import pprint
+
+tf.get_logger().setLevel('ERROR')
 
 from common.constants import test, BoxField, DatasetField
 from common.config import Config
@@ -37,6 +40,12 @@ from common.helper import ImagesInfo
 from common.timekeeper import TimeKeeper
 from common.helper import read_image, filt_text, get_predictions,process_predictions,get_reshape_size,process_caption_predictions
 from CaptionModel import CaptionModel
+
+
+# In[ ]:
+
+
+tf.get_logger().setLevel('ERROR')
 
 
 # In[ ]:
@@ -56,7 +65,7 @@ result_folder = args.result_folder
 server_ip = args.server
 test_number = args.test_number
 verbose = args.verbose
-image_size = args.image_size
+reshape_image_size = args.image_size
 max_tests = args.max_tests
 split_layer = args.split_layer
 
@@ -96,10 +105,10 @@ elif(test_number == 6):
 else:
     print(test_scenarios)
 
-if(image_size == None):
-    image_size = 250
+if(reshape_image_size == None):
+    reshape_image_size = 250
 
-# image_size = 400
+# reshape_image_size = 400
 
 if(max_tests == None):
     max_tests = 50
@@ -116,6 +125,7 @@ else:
 
 
 # tf.compat.v1.disable_eager_execution()
+tf.get_logger().setLevel('ERROR')
 
 
 # In[ ]:
@@ -146,7 +156,7 @@ split_val = "validation[:20%]"
 # split_layer = 3
 
 Logger.milestone_print("Test scenario   : [%d] %s" % (test_number, test_scenarios[test_number]))
-Logger.milestone_print("Image shape     : (%d %d)" % (image_size, image_size))
+Logger.milestone_print("Image shape     : (%d %d)" % (reshape_image_size, reshape_image_size))
 Logger.milestone_print("Max tests       : %d" % (max_tests))
 if ((test_number == test.SPLIT_LAYER) or (test_number == test.SPLIT_LAYER_ZLIB)):
     Logger.milestone_print("split layer     : [%d]" % (split_layer))
@@ -205,11 +215,11 @@ if(test_number in [test.STANDALONE]):
     #                             model.layers[310].output, 
     #                             model.layers[313].output])
     print("Finished loading")
-    captionModel = CaptionModel(image_size=image_size)
+    captionModel = CaptionModel(image_size=reshape_image_size)
 if(test_number in [test.JPEG_TRANSFER, test.RGB_IMAGE_TRANSFER, test.RGB_IMAGE_TRANSFER_ZLIB]):
     # head_model = tf.keras.models.load_model(cfg.saved_model_path + '/model', compile=False)
     send_json_dict = {}
-    send_json_dict['data_type'] = 'load_model_request'
+    send_json_dict['request'] = 'load_model_request'
     send_json_dict['model'] = 'model'
     send_json_dict['model_path'] = '/iv3_full_model'
     app_json = json.dumps(send_json_dict)
@@ -217,9 +227,9 @@ if(test_number in [test.JPEG_TRANSFER, test.RGB_IMAGE_TRANSFER, test.RGB_IMAGE_T
     assert(response == 'OK')
 
     send_json_dict = {}
-    send_json_dict['data_type'] = 'load_model_request'
+    send_json_dict['request'] = 'load_model_request'
     send_json_dict['model'] = 'captionModel'
-    send_json_dict['model_path'] = '/caption_i_%d' % (image_size)
+    send_json_dict['model_path'] = '/caption_i_%d' % (reshape_image_size)
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
@@ -231,7 +241,7 @@ if(test_number in [test.SPLIT_LAYER, test.SPLIT_LAYER_ZLIB]):
     head_model = tf.keras.models.load_model(model_path, compile=False)
     print("Finished loading")
     send_json_dict = {}
-    send_json_dict['data_type'] = 'load_model_request'
+    send_json_dict['request'] = 'load_model_request'
     send_json_dict['model'] = 'tail_model'
     send_json_dict['model_path'] = '/iv3_tail_model_%d' % (split_layer)
     app_json = json.dumps(send_json_dict)
@@ -239,9 +249,9 @@ if(test_number in [test.SPLIT_LAYER, test.SPLIT_LAYER_ZLIB]):
     assert(response == 'OK')
 
     send_json_dict = {}
-    send_json_dict['data_type'] = 'load_model_request'
+    send_json_dict['request'] = 'load_model_request'
     send_json_dict['model'] = 'captionModel'
-    send_json_dict['model_path'] = '/caption_i_%d' % (image_size)
+    send_json_dict['model_path'] = '/caption_i_%d' % (reshape_image_size)
     app_json = json.dumps(send_json_dict)
     response = client.send_load_model_request(str(app_json))
     assert(response == 'OK')
@@ -252,7 +262,7 @@ if(test_number in [test.SPLIT_LAYER, test.SPLIT_LAYER_ZLIB]):
 
 def preprocess_image(image):
     image = tf.squeeze(image,[0])
-    image = tf.image.resize(image, (image_size, image_size))
+    image = tf.image.resize(image, (reshape_image_size, reshape_image_size))
     image = tf.cast(image, tf.float32)
     image /= 127.5
     image -= 1.
@@ -269,7 +279,7 @@ def handle_test_STANDALONE(sample_img_batch, img_path):
     
     features, result = model(sample_img_batch)
 
-    reshape_layer_size = get_reshape_size(image_size)
+    reshape_layer_size = get_reshape_size(reshape_image_size)
     features = tf.reshape(features, [sample_img_batch.shape[0], reshape_layer_size*reshape_layer_size, 2048])
     caption_tensor = captionModel.evaluate(features)
 
@@ -291,18 +301,16 @@ def handle_test_STANDALONE(sample_img_batch, img_path):
 
 def handle_test_JPEG_TRANSFER(sample_img_batch, file_name):
     image = tf.squeeze(sample_img_batch,[0]) 
+    image_np_array = image.numpy()
     image_tensor = tf.io.encode_jpeg(image)
     byte_buffer_to_send = image_tensor.numpy()
 
     send_json_dict = {}
-    send_json_dict['data_type'] = 'file'
-    send_json_dict['original_image_shape_width'] = int(tf.shape(image)[0].numpy())
-    send_json_dict['original_image_shape_height'] = int(tf.shape(image)[1].numpy())
-    send_json_dict['original_image_shape_channels'] = int(tf.shape(image)[2].numpy())
+    send_json_dict['request'] = 'jpeg_buffer'
     send_json_dict['file_name'] = file_name
     send_json_dict['data_size'] = (len(byte_buffer_to_send))
-    send_json_dict['data_shape'] = "(%d,)" % (len(byte_buffer_to_send))
-    send_json_dict['image_size'] = image_size
+    send_json_dict['data_shape'] = image_np_array.shape
+    send_json_dict['reshape_image_size'] = reshape_image_size
 
     app_json = json.dumps(send_json_dict)
 
@@ -329,23 +337,18 @@ def handle_test_JPEG_TRANSFER(sample_img_batch, file_name):
 
 
 def handle_test_RGB_IMAGE_TRANSFER(sample_img_batch,file_name, zlib_compression=False):
-    sample_img_batch = preprocess_image(sample_img_batch)
-    image_tensor = tf.squeeze(sample_img_batch,[0]) 
-
-    image_np_array = sample_img_batch.numpy()
-
+    image_tensor = tf.cast(sample_img_batch, tf.float32)
+    image_np_array = image_tensor.numpy()
     byte_buffer_to_send = image_np_array.tobytes()
     if(zlib_compression == True):
         byte_buffer_to_send = zlib.compress(byte_buffer_to_send)
 
-    type(byte_buffer_to_send)
-
     send_json_dict = {}
-    send_json_dict['data_type'] = 'data'
+    send_json_dict['request'] = 'rgb_buffer'
     send_json_dict['file_name'] = file_name
     send_json_dict['data_size'] = (len(byte_buffer_to_send))
     send_json_dict['data_shape'] = image_np_array.shape
-    send_json_dict['image_size'] = image_size
+    send_json_dict['reshape_image_size'] = reshape_image_size
     if(zlib_compression == True):
         send_json_dict['zlib_compression'] = 'yes'
     else:
@@ -388,11 +391,11 @@ def handle_test_SPLIT_LAYER(sample_img_batch,file_name, zlib_compression=False):
     type(byte_buffer_to_send)
 
     send_json_dict = {}
-    send_json_dict['data_type'] = 'data'
+    send_json_dict['request'] = 'intermediate_tensor'
     send_json_dict['file_name'] = file_name
     send_json_dict['data_size'] = (len(byte_buffer_to_send))
     send_json_dict['data_shape'] = image_np_array.shape
-    send_json_dict['image_size'] = image_size
+    send_json_dict['reshape_image_size'] = reshape_image_size
     if(zlib_compression == True):
         send_json_dict['zlib_compression'] = 'yes'
     else:
@@ -496,7 +499,11 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
 
     tk.finishRecord(img_path)
 
-fname = cfg.temp_path + '/results/test_%d_i_%d_s_%d.csv' % (test_number, image_size, split_layer)
+from pathlib import Path
+Path(cfg.temp_path + '/results/' + result_folder).mkdir(parents=True, exist_ok=True)
+
+
+fname = cfg.temp_path + '/results/' + result_folder + '/test_%d_i_%d_s_%d.csv' % (test_number, reshape_image_size, split_layer)
 os.makedirs(os.path.dirname(fname),exist_ok=True)
 
 df.to_csv(fname)
@@ -507,7 +514,7 @@ print(df['pred_caption'].iloc[0])
 av_column = df.mean(axis=0)
 Logger.milestone_print("----------------:")
 Logger.milestone_print("Test scenario   : %d %s" % (test_number, test_scenarios[test_number]))
-Logger.milestone_print("Image shape     : (%d %d)" % (image_size, image_size))
+Logger.milestone_print("Image shape     : (%d %d)" % (reshape_image_size, reshape_image_size))
 Logger.milestone_print("Max tests       : %d" % (max_tests))
 Logger.milestone_print("accuracy        : %.2f" % (av_column.accuracy))
 Logger.milestone_print("top_1_accuracy  : %.2f" % (av_column.top_1_accuracy))
@@ -524,9 +531,6 @@ tk.summary()
 
 # In[ ]:
 
-
-from pathlib import Path
-Path(cfg.temp_path + '/results/' + result_folder).mkdir(parents=True, exist_ok=True)
 
 fname = cfg.temp_path + '/results/' + result_folder + '/results.csv'
 if(os.path.isfile(fname) == True):
@@ -546,7 +550,7 @@ if(os.path.isfile(fname) == True):
                      'tail_time': float,
                      'nw_payload': float})
 else:
-    print("File %s not found" % fname)
+    print("Results in %s" % fname)
     df_result = pd.DataFrame(columns=[  'test_number',
                                         'image_size',
                                         'split_layer',
@@ -563,7 +567,7 @@ else:
                                         'nw_payload'])
 
 new_row = { 'test_number': test_number,
-            'image_size': image_size,
+            'image_size': reshape_image_size,
             'split_layer': split_layer,
             'accuracy': float(av_column.accuracy),
             'top_1_accuracy': float(av_column.top_1_accuracy),

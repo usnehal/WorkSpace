@@ -11,9 +11,17 @@ else
   SERVER=" -s $IP"
 fi
 
+if [ -z "$2" ]
+then
+  echo "no result folder"
+  RESULT_FOLDER="temp"
+else
+  RESULT_FOLDER=$2
+fi
+
 DATE_WITH_TIME=`date "+%Y%m%d-%H%M%S"`
 TESTS=" -m 100"
-VERBOSE=" -v 0 -d DATE_WITH_TIME"
+VERBOSE=" -v 0 -r $DATE_WITH_TIME "
 
 cd ~/WorkSpace/
 rm ./temp/results/results.csv 
