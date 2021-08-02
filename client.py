@@ -114,8 +114,6 @@ else:
 if(reshape_image_size == None):
     reshape_image_size = 250
 
-# reshape_image_size = 400
-
 if(max_tests == None):
     max_tests = 50
 elif (((max_tests % 50) == 0) and (max_tests <= 5000)):
@@ -519,7 +517,6 @@ for sample_img_batch, ground_truth, img_path in tqdm(ds_val):
 from pathlib import Path
 Path(cfg.temp_path + '/results/' + result_folder).mkdir(parents=True, exist_ok=True)
 
-
 fname = cfg.temp_path + '/results/' + result_folder + '/test_%d_i_%d_s_%d.csv' % (test_number, reshape_image_size, split_layer)
 os.makedirs(os.path.dirname(fname),exist_ok=True)
 
@@ -605,11 +602,4 @@ df_result.to_csv(fname,index = False)
 
 
 # ds_info
-
-
-# In[ ]:
-
-
-Test = False
-# if (Test == True):
 
