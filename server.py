@@ -94,16 +94,23 @@ def handle_load_model(msg,model_path_requested):
 
 
 def handle_image_file(msg,shape,reshape_image_size,quantized=False,zlib_compression=False):
-    temp_file = '/tmp/temp.bin'
-    f = open(temp_file, "wb")
-    f.write(msg)
-    f.close()
+    
+    # temp_file = '/tmp/temp.bin'
+    # f = open(temp_file, "wb")
+    # f.write(msg)
+    # f.close()
 
     t0 = time.perf_counter()
-    image_tensor = tf.expand_dims(read_image(temp_file, height=reshape_image_size, width=reshape_image_size), 0) 
+    image = tf.image.decode_jpeg(bytes(msg), channels=3)
+    image = tf.image.resize(image, (reshape_image_size, reshape_image_size))
+    image = tf.cast(image, tf.float32)
+    image /= 127.5
+    image -= 1.
+    image_tensor = tf.expand_dims(image, 0) 
+
+    # image_tensor = tf.expand_dims(read_image(temp_file, height=reshape_image_size, width=reshape_image_size), 0) 
     features, result = model(image_tensor)
     reshape_size = get_reshape_size(reshape_image_size)
-    # print("reshape_size=%d" %(reshape_size))
     features = tf.reshape(features, [1, reshape_size*reshape_size, 2048])
     caption_tensor = captionModel.evaluate(features)
     t1 = time.perf_counter() - t0
