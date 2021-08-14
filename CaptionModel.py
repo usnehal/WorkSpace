@@ -152,7 +152,9 @@ class CaptionModel(Model):
 
         self.decoder.load_weights(model_path + "/decoder.h5" )
         self.encoder.load_weights(model_path + "/encoder.h5" )
-        
+        self.decoder.summary()
+        self.encoder.summary()
+
     def call(self, features):
         # extract the features from the image shape: (batch, 8*8, embed_dim)
         features = self.dense(features)
